@@ -1,0 +1,34 @@
+09/07/21 11:24
+
+Problem 1 (5 points):
+Score += 5
+
+Problem 2 (5 points):
+Score += 5
+
+Problem 3 (5 points):
+Score += 5
+
+Problem 4 (10 points):
+Score += 10
+
+Problem 5 (10 points):
+'organize_photos.sh' not in correct directory
+'organize_photos.sh' was not executed
+Score += 0
+
+Problem 6 (10 points):
+File 'img_649.jpg' not found
+Score += 0
+
+Problem 7 (5 points):
+Score += 5
+
+Total score: 30/50 = 60.0%
+
+
+Comments:
+	Avoid using absolute paths (e.g. "cd ~/Desktop/Volume1/UnixShell1/Shell1") when a relative path works instead (e.g. "cd Shell1")
+
+-------------------------------------------------------------------------------
+
