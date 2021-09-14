@@ -6,7 +6,10 @@
 """
 
 import calculator as cal
+import box
 from itertools import chain, combinations
+import time
+from random import randint
 
 # Problem 1
 def prob1(L):
@@ -106,3 +109,36 @@ def power_set(A):
 # Problem 5: Implement shut the box.
 def shut_the_box(player, timelimit):
     """Play a single game of shut the box."""
+    player = input("Enter your name: \n")
+    print(f'Player name is {player}')
+    timelimit = input("Enter time limit in seconds: \n")
+    print(f'Time limit is {timelimit} seconds')
+    still_playing = true
+    remaining = [1,2,3,4,5,6,7,8,9]
+
+    while still_playing = true:
+        time_1 = time.time()
+        a, b = randint(1,6), randint(1,6)
+        if sum(remaining <= 6):
+            b = 0
+        roll = a + b
+        print("Numbers left: " + remaining "\n")
+        print("Roll: " + roll "\n")
+        print("Seconds left: " + timelimit "\n")
+        still_playing = box.isvalid(roll, remaining)
+        time_2 = time.time()
+        time_left = timelimit - (time_2 - time_1)
+
+        if time_left <= 0 OR box.isvalid(roll,remaining) = false:
+            still_playing = false
+            print("You loose, say something about the score")
+
+        
+
+
+        
+
+
+    box.parse_input(player_input, remaining)
+
+    print("Numbers to eliminate: " + remaining "\n\n")
