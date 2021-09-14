@@ -22,6 +22,8 @@ def isvalid(roll, remaining):
     for i in range(1, len(remaining)+1):
         if any([sum(combo) == roll for combo in combinations(remaining, i)]):
             return True
+        else:
+            return False
     return False
 
 

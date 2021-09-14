@@ -109,36 +109,66 @@ def power_set(A):
 # Problem 5: Implement shut the box.
 def shut_the_box(player, timelimit):
     """Play a single game of shut the box."""
-    player = input("Enter your name: \n")
-    print(f'Player name is {player}')
-    timelimit = input("Enter time limit in seconds: \n")
-    print(f'Time limit is {timelimit} seconds')
-    still_playing = true
+
+    print("Player name is " + str(player))
+    
+    print("Time limit is " + str(timelimit) +  " seconds \n")
+
+    still_playing = True
     remaining = [1,2,3,4,5,6,7,8,9]
+    start = time.time()
+    
+    while still_playing == True:
 
-    while still_playing = true:
-        time_1 = time.time()
-        a, b = randint(1,6), randint(1,6)
-        if sum(remaining <= 6):
+        b = randint(1,6)
+        if sum(remaining) <= 6:
             b = 0
-        roll = a + b
-        print("Numbers left: " + remaining "\n")
-        print("Roll: " + roll "\n")
-        print("Seconds left: " + timelimit "\n")
-        still_playing = box.isvalid(roll, remaining)
-        time_2 = time.time()
-        time_left = timelimit - (time_2 - time_1)
+        roll = randint(1,6) + b
 
-        if time_left <= 0 OR box.isvalid(roll,remaining) = false:
-            still_playing = false
-            print("You loose, say something about the score")
+        print("Numbers left: " + str(remaining))
+        print("Roll: " + str(roll))
+        time_played = round(time.time() - start, ndigits = 2)
+        print("Seconds left: " + str(timelimit - time_played))
+        input_string = input("Numbers to eliminate: ")
+        print("\n")
 
+        valid_move = False
+        while valid_move == False:
+            numbers = [int(num) for num in input_string.split()]
+                
+            if any([num not in remaining for num in numbers]):
+                print("Move not valid. Try again.")
+                input_string = input("Numbers to eliminate: ")
+                    
+            elif len(set(numbers)) != len(numbers):
+                print("Move not valid. Try again.")
+                input_string = input("Numbers to eliminate: ")
+                    
+            else:
+                valid_move = True
+
+        for num in numbers:
+            remaining.remove(num)
+            
+        time_played = round(time.time() - start, ndigits = 2)
+
+        if (len(remaining) == 0) or (time_played >= timelimit) or (box.isvalid(roll,remaining) == False):
+            still_playing = False
         
+            if len(remaining) == 0:
+                print("Score for player " + str(player) + ": " + str(sum(remaining)) + " points")
+                print("Time played: " + str(time_played + " seconds"))
+                print("You shut the box!!")
 
+            if (time_played >= timelimit):
+                print("Score for player " + str(player) + ": " + str(sum(remaining)) + " points")
+                print("Time played: " + str(time_played) + " seconds")
+                print("You ran out of time")
 
-        
-
-
-    box.parse_input(player_input, remaining)
-
-    print("Numbers to eliminate: " + remaining "\n\n")
+            if box.isvalid(roll,remaining) == False:
+                print("Numbers left: " + str(remaining))
+                print("Roll: " + str(roll))
+                print("That roll doesn't work! Game over!\n")
+                print("Score for player " + str(player) + ": " + str(sum(remaining)) + " points")
+                print("Time played: " + str(time_played) + " seconds")
+                print("Better luck next time!")
