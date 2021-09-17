@@ -16,7 +16,7 @@ def prob1(L):
     """Return the minimum, maximum, and average of the entries of L
     (in that order).
     """
-    print(min(L), max(L), (sum(L)/len(L)), sep = ",")
+    print(min(L), max(L), (sum(L)/len(L)), sep=",")
 
     #raise NotImplementedError("Problem 1 Incomplete")
 
