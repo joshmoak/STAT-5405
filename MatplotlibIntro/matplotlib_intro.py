@@ -100,12 +100,12 @@ def prob4():
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
     plt.rc('axes', titlesize=8)
     plt.axis([0, 2*np.pi, -2, 2])
-    ax1.set_title("sin(x)")
+    ax1.set_title("sin(x)") #titles of each graph
     ax2.set_title("sin(2x)")
     ax3.set_title("2sin(x)")
     ax4.set_title("2sin(2x)")
     fig.suptitle("Various sin curves")
-    ax1.plot(x, np.sin(x), "g-")
+    ax1.plot(x, np.sin(x), "g-") #styles of each graph as well as proper plots
     ax2.plot(x, np.sin(2*x), "r--")
     ax3.plot(x, 2*np.sin(x), "b--")
     ax4.plot(x, 2*np.sin(2*x), "m:")
@@ -128,14 +128,14 @@ def prob5():
     x = data[:,0] # hours of day
     longitudes = data[:,1] #second column, all rows
     latitudes = data[:,2] # third column, all rows
-    ax1 = plt.subplot(121)
-    ax1.set_xlabel("Longitudes")
+    ax1 = plt.subplot(121) # Left subplot
+    ax1.set_xlabel("Longitudes") #labels
     ax1.set_ylabel("Latitudes")
     ax1.set_aspect("equal")
-    ax1.plot(longitudes, latitudes, ".k", markersize = .5)
-    ax2 = plt.subplot(122)
-    ax2.set_xlabel("Hours of day")
-    ax2.hist(x, bins = 24, range = [0, 23] )
+    ax1.plot(longitudes, latitudes, "k,", markersize = .5) #black pixel marker
+    ax2 = plt.subplot(122) # left plot
+    ax2.set_xlabel("Hours of day") #labels
+    ax2.hist(x, bins = 24, range = [0, 23] ) #assuring proper range
     plt.show()
 
     #raise NotImplementedError("Problem 5 Incomplete")

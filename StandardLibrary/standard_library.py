@@ -102,7 +102,6 @@ def power_set(A):
     results = list(chain.from_iterable(combinations(s, r) for r in range(len(s)+1)))
     return results
 
-
     #raise NotImplementedError("Problem 4 Incomplete")
 
 
