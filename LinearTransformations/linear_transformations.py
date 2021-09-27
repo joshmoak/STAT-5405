@@ -104,20 +104,20 @@ def solar_system(T, x_e, x_m, omega_e, omega_m):
         omega_m (float): The moon's angular velocity.
     """
     
-    time = np.linspace(0,T,300)
-    p_e_0 = np.array([x_e, 0])
+    time = np.linspace(0,T,300) #Time vector
+    p_e_0 = np.array([x_e, 0]) #initial conditions
     p_m_0 = np.array([x_m, 0])
-    p_e_x = []
-    p_e_y = []
+    p_e_x = [] #Empty lists that will contain x and y values for 
+    p_e_y = [] #moon and earth
     p_m_x = []
     p_m_y = []
-    for i in time:
-        p_e = rotate(p_e_0, i*omega_e)
-        relative_p = p_m_0 - p_e_0
-        moon_orient = rotate(relative_p, i*omega_m)
-        p_m = moon_orient + p_e
-        p_e_x.append(p_e[0])
-        p_e_y.append(p_e[1])
+    for i in time: #Loop through every time value in time vector
+        p_e = rotate(p_e_0, i*omega_e) #perform rotation for earth
+        relative_p = p_m_0 - p_e_0 #Moon relative to earth
+        moon_orient = rotate(relative_p, i*omega_m) #Rotation
+        p_m = moon_orient + p_e #translation
+        p_e_x.append(p_e[0]) #Populate empty lists with x coordinates
+        p_e_y.append(p_e[1]) #Populate empty lists with y coordinates
         p_m_x.append(p_m[0])
         p_m_y.append(p_m[1])
     ax = plt.subplot(111)
@@ -172,22 +172,22 @@ def prob3():
         A = random_matrix(n)
         B = random_matrix(n)
     
-        start_1 = time.time()
-        matrix_vector_product(A,x)
-        mat_vec_time.append(time.time() - start_1)
+        start_1 = time.time() #time starts
+        matrix_vector_product(A,x) #mat-vec operation
+        mat_vec_time.append(time.time() - start_1) #time ends
 
-        start_2 = time.time()
-        matrix_matrix_product(A,B)
-        mat_mat_time.append(time.time() - start_2)
+        start_2 = time.time() #time start
+        matrix_matrix_product(A,B) #mat-mat operation
+        mat_mat_time.append(time.time() - start_2) #time end
 
-    ax1 = plt.subplot(121)
+    ax1 = plt.subplot(121) #plot times against n-values
     ax1.plot(n_vals, mat_vec_time)
     ax1.scatter(n_vals, mat_vec_time)
     ax1.set_xlabel("n") 
     ax1.set_ylabel("Seconds")
     ax1.set_title("Matrix-Vector Multiplication")
 
-    ax2 = plt.subplot(122)
+    ax2 = plt.subplot(122) #more plotting for other operation
     ax2.plot(n_vals, mat_mat_time)
     ax2.scatter(n_vals, mat_mat_time)
     ax2.set_xlabel("n")
@@ -217,23 +217,23 @@ def prob4():
         A = random_matrix(n)
         B = random_matrix(n)
     
-        start_1 = time.time()
-        matrix_vector_product(A,x)
-        mat_vec_time.append(time.time() - start_1)
+        start_1 = time.time() #starting time
+        matrix_vector_product(A,x) #same as prob 3
+        mat_vec_time.append(time.time() - start_1) #ending time
 
         start_2 = time.time()
         matrix_matrix_product(A,B)
         mat_mat_time.append(time.time() - start_2)
 
         start_3 = time.time()
-        np.dot(A,x)
+        np.dot(A,x) #similar but using numpy's multiplication
         mat_vec_dot_time.append(time.time() - start_3)
 
         start_4 = time.time()
-        np.dot(A,B)
+        np.dot(A,B) #numpy's operation again
         mat_mat_dot_time.append(time.time() - start_4)
 
-
+    #plot using linear scale
     ax2 = plt.subplot(121)
     ax2.plot(n_vals, mat_vec_time)
     ax2.plot(n_vals, mat_mat_time)
@@ -243,8 +243,11 @@ def prob4():
     ax2.scatter(n_vals, mat_mat_time)
     ax2.scatter(n_vals, mat_vec_dot_time)
     ax2.scatter(n_vals, mat_mat_dot_time)
+    ax2.set_xlabel("n") 
+    ax2.set_ylabel("Seconds")
+    ax2.set_title("Linear Scale")
     
-
+    #plot using log scale
     ax1 = plt.subplot(122)
     ax1.plot(n_vals, mat_vec_time)
     ax1.plot(n_vals, mat_mat_time)
@@ -255,6 +258,9 @@ def prob4():
     ax1.scatter(n_vals, mat_vec_dot_time)
     ax1.scatter(n_vals, mat_mat_dot_time)
     ax1.set_xscale('log')
+    ax1.set_yscale('log')
+    ax1.set_xlabel("n") 
+    ax1.set_title("Logarithmic Scale")
     
 
 
