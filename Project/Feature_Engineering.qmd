@@ -144,4 +144,12 @@ df["black_pawn_moves"] <- black_pawn
 df["game_type"] <- game_types
 ```
 
+```{r}
+set.seed(69420)
+train.prop <- 0.9
+trnset <- sort(sample(1:nrow(df), ceiling(nrow(df) * train.prop)))
+# create the training and test sets
+train <- df[trnset,]
+test  <- df[-trnset,]
+```
 
