@@ -1,0 +1,10 @@
+[Event "STAT Project"]
+[Site "Lichess.com"]
+[Date "1992.11.04"]
+[Round "-"]
+[White "knightbot"]
+[Black, "freeed0m_j"]
+[Result "0-1"]
+
+
+1. a4 e5, 2. h4 Bc5, 3. Nf3 e4, 4. Na3 exf3, 5. gxf3 c6, 6. d3 Qb6, 7. Bd2 Bxf2# 0-1

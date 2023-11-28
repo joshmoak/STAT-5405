@@ -1,0 +1,186 @@
+```{r}
+df <- read.csv("chess_games.csv")
+df <- df[-which(df["turns"] <= 1), ]
+
+all_moves <- df["moves"]
+```
+
+```{r}
+# chess_moves <- all_moves[2,]
+
+build_pgn <- function(i, df){
+  # i is the row index. 
+  
+  # First, add numbers for each pair of moves
+  chess_moves <- df["moves"][i,]
+  moves <- strsplit(chess_moves, " ")[[1]]
+  odds <- moves[seq(1, length(moves), by = 2)]
+  evens <- moves[seq(2, length(moves), by = 2)]
+  nums <- paste0(1:length(odds), ".")
+  ex <- toString(paste(nums, odds, evens, sep = " "))
+  if(length(odds) != length(evens)){
+    ex <- sub("\\s+\\S*$", "", ex)
+  }
+  
+  # Now add winner. 1-0 means white won, 0-1 means black won, and 1/2-1/2 means draw
+  winner <- df["winner"][i,]
+  if(winner == "White"){winner_code <-"1-0"}
+  if(winner == "Black"){winner_code <- "0-1"}
+  else{winner_code <- "1/2-1/2"}
+  ex <- paste(ex, winner_code)
+  #
+  
+  # Add "7-tag roster"
+  roster <- sprintf('[Event "STAT Project"]\n[Site "Lichess.com"]\n[Date "1992.11.04"]\n[Round "-"]\n[White "%s"]\n[Black, "%s"]\n[Result "%s"]\n\n', df["white_id"][i,], df["black_id"][i,], winner_code)
+
+  fileConn<-file(sprintf("PGN_files/file%s.pgn", i))
+  writeLines(c(roster, ex), fileConn)
+  close(fileConn)
+}
+
+
+```
+
+```{r}
+# BUILDING PGN
+# build_pgn(1, df)
+# for(i in seq(1:nrow(df)))
+# {
+#   build_pgn(i, df)
+# }
+```
+
+```{r}
+find_castle_move_white <- function(i) {
+  chess_game <- df["moves"][i,]
+  moves <- unlist(strsplit(chess_game, " "))
+  move_number <- 1
+  white_castling_move <- NULL
+
+  for (move in moves) {
+    if (grepl("O-O|O-O-O", move)) {
+      if (move_number %% 2 == 1) {
+        white_castling_move <- ceiling(move_number / 2)
+      }
+    }
+    move_number <- move_number + 1
+  }
+  if (is.null(white_castling_move)){
+    return(0)
+  }
+  return(white_castling_move)
+}
+
+```
+
+```{r}
+find_castle_move_black <- function(i) {
+  chess_game <- df["moves"][i,]
+  moves <- unlist(strsplit(chess_game, " "))
+  move_number <- 1
+  black_castling_move <- NULL
+
+  for (move in moves) {
+    if (grepl("O-O|O-O-O", move)) {
+      if (move_number %% 2 == 0) {
+        black_castling_move <- (move_number / 2)
+      }
+    }
+    move_number <- move_number + 1
+  }
+  if (is.null(black_castling_move)){
+    return(0)
+  }
+  return(black_castling_move)
+}
+
+```
+
+
+```{r}
+white_castle <- c()
+for (i in seq(1:nrow(df))) {  
+  white_castle <- c(white_castle, find_castle_move_white(i))
+}
+```
+
+```{r}
+black_castle <- c()
+for (i in seq(1:nrow(df))){
+  black_castle <- c(black_castle, find_castle_move_black(i))
+}
+```
+
+```{r}
+df["white_castle"] <- white_castle
+```
+
+```{r}
+df["black_castle"] <- black_castle
+```
+
+```{r}
+# Build 5 columns, 
+# < 29s = UltraBullet
+# < 179s = Bullet
+# < 479s = Blitz
+# < 1499s = Rapid
+# ≥ 1500s = Classical
+
+find_game_type <- function(i) {
+  type_code <- df["time_increment"][i,]
+  
+  moves <- unlist(strsplit(type_code, "+", fixed = TRUE))
+  move <- as.numeric(moves[1])
+  print(move)
+  if (move <= 5){
+    return("bullet")
+  }
+  else if (move <= 20){
+    return("blitz")
+  }
+  else {return("rapid")}
+  
+  # move_number <- 1
+  # black_castling_move <- NULL
+  # 
+  # for (move in moves) {
+  #   if (grepl("O-O|O-O-O", move)) {
+  #     if (move_number %% 2 == 0) {
+  #       black_castling_move <- (move_number / 2)
+  #     }
+  #   }
+  #   move_number <- move_number + 1
+  # }
+  # if (is.null(black_castling_move)){
+  #   return(0)
+  # }
+  # return(black_castling_move)
+}
+
+
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+
+

@@ -1,0 +1,65 @@
+---
+title: "Project Proposal"
+subtitle: "STAT 5405"
+author: "Josh Moak & Kevin Russell"
+format: html
+title-block-style: plain
+editor: 
+  markdown: 
+    wrap: sentence
+---
+
+Abstract:
+
+We have been contacted by an aspiring chess tutor who would like to gain a greater understanding of what he should teach and what he should expect from his students' games.
+This tutor has provided us with a dataset of over 20,000 games completed on the website lichess.com.
+Each game has data including each move of the game, the ratings of the players, the time format of the game, the opening used, the winner, and the method of victory (if the result was not a draw).
+To do this, we will use our understanding of R to clean the data and create new columns from the game data provided to us.
+Additionally, we will look into using the package chess to aid in both our analysis of the games and in feature engineering.
+We will then use the GLIM methods we have learned in class with other investigative resources (such as decision trees and gradient boosting) to answer questions the chess tutor may have about the games.
+
+Detailed description:
+
+Our data set, which can be found at https://www.kaggle.com/datasets/mysarahmadbhat/online-chess-games/data, has roughly 20,100 rows, each representing a game played on the popular website lichess.com.
+There are 17 columns, which detail whether the game was rated, the number of turns completed, the outcome of the game, the time format of the game, the ELO rating of the players in the game (generally between 1000-2000, but occasionally outside of that range, where higher indicates a stronger player), the opening name and duration, and the moves of the game.
+We will also be creating more columns based on the overall moves of the game with the use of functions and the chess package.
+In general, our outcome variable will be the victor, as we are attempting to help our chess tutor help his students to win more games.
+
+Some of the key questions our aspiring chess tutor asked us to find out include:
+
+1.  Are the ELO ratings of the players good predictors of the winner?
+
+2.  What are other good predictors of the winner?
+
+3.  Do certain moves result in more wins?
+
+    i.  Does the timing of certain moves result in more wins?
+
+4.  Do quicker matches result in fewer mates?
+
+The first question could be a good application of a multi-class classification model.
+In this instance, classes could include (`White`, `Black`, `Draw`).
+Since these classes are nominally scaled, we would thus be interested in a model similar to that described in class: a multinomial logit model with L = 3 classes.
+
+The second question is more general, and thus would provide a good opportunity to implement some exploratory data analysis to figure out whether interaction between various predictors exist, and whether moving beyond the initial additive form of a model will be beneficial.
+This exploratory data analysis will involve making assumptions about the data (for example assuming that the player with the higher rating will be more likely to win).
+
+Both of the above questions are prime candidates for using tree based models such as random forests or gradient boosted trees.
+This might also help us to discover whether linear relationships exist between various predictors (or combinations of predictors) and the response of interest (winner).
+
+Since our data set has a column which describes all the moves played in the given game, we wish to learn about certain moves and their influence on the outcome of the game.
+For example, the timing of key moves such as castling, capturing a key piece, or the use of a particular opening might all impact the outcome of the game.
+Methods similar to what we described above would be applicable here.
+
+One tool that we plan to use in our analysis is the chess library in R.
+This library allows us to use a string of moves in the form of a PGN file to analyze the strength of moves, or learn when certain key moves happened.
+Effectively, this will allow us to use the string of moves column included in our data set to engineer several more columns describing when certain moves happened, when certain moves were followed by other moves, or even when/how many times a particularly poor or strong move occurred.
+
+Regarding the last question, our chess tutor is interested in how a game ends, not just the outcome.
+For example, a win could be the result of the opponent resigning, or running out of time or just losing the game.
+Our tutor hypothesized that quick matches such as bullet or blitz matches result in a higher proportion of losing by resigning or running out of time.
+
+Learning which predictors have the most influence on the outcome of a game will enable our chess tutor to tailor his lessons according to the key important aspects we will discover.
+Ideally, by answering his questions, we will have the ability to give recommendations to the tutor regarding what moves to emphasize, and when.
+We will also be able to recommend strategies for the tutor to advise to players at different skill levels, whether it is to press an advantage against a weaker player, or play more conservatively against a stronger player, based on our ELO analysis results.
+Ultimately, our goal is to allow the tutor to claim he is giving data-driven advice to help players win more chess games.
