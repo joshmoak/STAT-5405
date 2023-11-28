@@ -1,0 +1,229 @@
+---
+title: "Add columns"
+author: "Kevin Russell"
+date: '2023-11-14'
+output: html_document
+---
+
+```{r}
+find_castle_moves <- function(chess_game) {
+  moves <- unlist(strsplit(chess_game, " "))
+  move_number <- 1
+  white_castling_move <- NULL
+  black_castling_move <- NULL
+
+  for (move in moves) {
+    if (grepl("O-O|O-O-O", move)) {
+      if (move_number %% 2 == 1) {
+        white_castling_move <- ceiling(move_number / 2)
+      } else if (move_number %% 2 == 0) {
+        black_castling_move <- move_number / 2
+      }
+    }
+    move_number <- move_number + 1
+  }
+
+  return(list(white = white_castling_move, black = black_castling_move))
+}
+
+
+```
+
+```{r}
+# Import data, view it 
+chess <- read.csv("C:/Users/kruss/Downloads/STAT5405/archive (11)/chess_games.csv")
+head(chess)
+```
+
+```{r}
+columns_to_convert <- c("victory_status", "winner", "time_increment", "opening_code", "opening_fullname", "opening_shortname", "opening_response", "opening_variation")
+
+# Convert specified columns to factors
+chess[, columns_to_convert] <- lapply(chess[, columns_to_convert], as.factor)
+
+head(chess)
+```
+```{r}
+library(dplyr)
+
+find_castle_move_white <- function(i) {
+  chess_game <- chess["moves"][i,]
+  moves <- unlist(strsplit(chess_game, " "))
+  move_number <- 1
+  white_castling_move <- NULL
+
+  for (move in moves) {
+    if (grepl("O-O|O-O-O", move)) {
+      if (move_number %% 2 == 1) {
+        white_castling_move <- ceiling(move_number / 2)
+      }
+    }
+    move_number <- move_number + 1
+  }
+  if (is.null(white_castling_move)){
+    return(0)
+  }
+  return(white_castling_move)
+}
+
+find_castle_move_black <- function(i) {
+  chess_game <- chess["moves"][i,]
+  moves <- unlist(strsplit(chess_game, " "))
+  move_number <- 1
+  black_castling_move <- NULL
+
+  for (move in moves) {
+    if (grepl("O-O|O-O-O", move)) {
+      if (move_number %% 2 == 0) {
+        black_castling_move <- move_number / 2
+      }
+    }
+    move_number <- move_number + 1
+  }
+  if (is.null(black_castling_move)){
+    return(0)
+  }
+  return(black_castling_move)
+}
+
+```
+
+
+```{r}
+
+white_castle <- c()
+for (i in seq(1:nrow(chess))) {  
+  
+white_castle <- c(white_castle, find_castle_move_white(i))
+
+}
+
+black_castle <- c()
+for (i in seq(1:nrow(chess))) {  
+  
+black_castle <- c(black_castle, find_castle_move_black(i))
+
+}
+
+```
+
+```{r}
+chess["white_castle"] <- white_castle
+chess["black_castle"] <- black_castle
+```
+
+
+
+```{r}
+find_pawn_moves_white <- function(i) {
+  chess_game <- chess["moves"][i,]
+  moves <- unlist(strsplit(chess_game, " "))
+  pawn_moves <- 0
+  pattern <- "^[a-h][1-8x]"
+  move_number <- 1
+
+  for (move in moves) {
+    if (grepl(pattern, move)) {
+      if (move_number %% 2 == 1) {
+        pawn_moves <- pawn_moves + 1
+      }
+    }
+    move_number <- move_number + 1
+  }
+  return(pawn_moves)
+}
+
+find_pawn_moves_black <- function(i) {
+  chess_game <- chess["moves"][i,]
+  moves <- unlist(strsplit(chess_game, " "))
+  pawn_moves <- 0
+  pattern <- "^[a-h][1-8x]"
+  move_number <- 1
+
+  for (move in moves) {
+    if (grepl(pattern, move)) {
+      if (move_number %% 2 == 0) {
+        pawn_moves <- pawn_moves + 1
+      }
+    }
+    move_number <- move_number + 1
+  }
+  return(pawn_moves)
+}
+
+
+```
+
+
+```{r}
+white_pawn <- c()
+for (i in seq(1:nrow(chess))) {  
+  
+white_pawn <- c(white_pawn, find_pawn_moves_white(i))
+
+}
+
+black_pawn <- c()
+for (i in seq(1:nrow(chess))) {  
+  
+black_pawn <- c(black_pawn, find_pawn_moves_black(i))
+
+}
+```
+
+```{r}
+chess["white_pawn_moves"] <- white_pawn
+chess["black_pawn_moves"] <- black_pawn
+```
+
+```{r}
+head(chess)
+```
+
+
+```{r}
+library(stringr)
+
+match_start_of_string <- function(i, character) {
+  input_string <- chess["time_increment"][i,]
+  # Define a regular expression pattern to match the start of the string up to the specified character
+  pattern <- paste0("^(.*?)(?=[", character, "])")
+  
+  # Use str_extract to extract the captured substring
+  result <- str_extract(input_string, pattern)
+  
+  # If a match is found, return the captured substring; otherwise, return NA
+  if (!is.na(result)) {
+    return(result)
+  } else {
+    return(NA)
+  }
+}
+
+```
+
+
+```{r}
+minutes <- c()
+for (i in seq(1:nrow(chess))) {  
+  
+minutes <- c(minutes, match_start_of_string(i, "+"))
+
+}
+```
+
+```{r}
+chess["minutes"] <- minutes
+```
+
+```{r}
+head(chess)
+```
+
+```{r}
+file_path <- "chess_data.csv"
+
+# Export the data frame to a CSV file
+write.csv(chess, file = file_path, row.names = FALSE)
+```
+
