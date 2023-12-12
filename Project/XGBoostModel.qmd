@@ -1,0 +1,136 @@
+---
+title: "Project"
+subtitle: "Stats 5405"
+author: "Kevin Russell & Josh Moak"
+format: html
+title-block-style: plain
+---
+
+In the following code blocks, we explore an `XGBoost` model to determine the importance of each predictor in predicting the game winner.
+
+```{r}
+library(xgboost)
+library(Matrix)
+```
+
+```{r}
+set.seed(69420)
+train.prop <- 0.9
+trnset <- sort(sample(1:nrow(df), ceiling(nrow(df) * train.prop)))
+# create the training and test sets
+train <- df[trnset,]
+test  <- df[-trnset,]
+```
+
+We have a few categorical predictors. Using the `caret` library, we can one-hot encode these. Note the use of the fullRank = TRUE. This means that, for example, `game_type`, has three categories: bullet, blitz, and rapid. The encoding will result in two columns, such that the game_type is bullet when `game_typebullet` is 1 and `game_typerapid` is 0, and visa versa for when game type is rapid. When both are zero, the game_type is blitz.
+
+```{r}
+
+library(caret)
+dmy_train <- dummyVars(" ~ game_type + victory_status + rated", data = train, fullRank = TRUE)
+dummy_df_train <- data.frame(predict(dmy_train, newdata = train))
+
+dmy_test <- dummyVars(" ~ game_type + victory_status + rated", data = test, fullRank = TRUE)
+dummy_df_test <- data.frame(predict(dmy_train, newdata = test))
+
+
+train <- do.call(cbind, list(train, dummy_df_train))
+test <- do.call(cbind, list(test, dummy_df_test))
+
+```
+
+```{r}
+
+predictors <- c("turns", "white_rating", "black_rating", "opening_moves", "white_castle", "black_castle", "white_pawn_moves", "black_pawn_moves", "game_typebullet", "game_typerapid", "victory_statusMate", "victory_statusOut.of.Time", "victory_statusResign", "ratedTRUE")
+
+
+```
+
+We also change `winner` to numeric. The outcome 0 means the game was a draw, the outcome 1 means black won, and the outcome 2 means white won.
+
+```{r}
+winner_cats <- function(df, i) {
+  winner <- df["winner"][i,]
+
+  if (winner == "White"){
+    return(2)
+  }
+  else if (winner == "Black"){
+    return(1)
+  }
+  else {return(0)}
+}
+
+train.winner.gbm <- c()
+for (i in seq(1:nrow(train))) {  
+  train.winner.gbm <- c(train.winner.gbm, winner_cats(train,i))
+}
+
+test.winner.gbm <- c()
+for (i in seq(1:nrow(test))) {  
+  test.winner.gbm <- c(test.winner.gbm, winner_cats(test,i))
+}
+
+```
+
+Next, we setup our train and test data-sets in the desired format.
+
+```{r}
+# Train dataset
+pred.train.gbm <- data.matrix(train[,predictors]) # predictors only
+dtrain <- xgb.DMatrix(data = pred.train.gbm, label = train.winner.gbm)
+
+# Test dataset
+pred.test.gbm <- data.matrix(test[,predictors]) # predictors only
+dtest <- xgb.DMatrix(data = pred.test.gbm, label = test.winner.gbm)
+```
+
+Here, we set up our parameters. I experimented with a few hyper parameters beyond what is shown below. The parameters show below are the ones I was able to achieve the highest accuracies with.
+
+```{r}
+
+watchlist <- list(train = dtrain, test = dtest)
+param <- list(max_depth = 5, eta = 1, nthread = 2, num_class = 3,
+              objective = "multi:softmax", eval_metric = "merror")
+
+```
+
+We now train the model for 50 rounds, suppressing the outputted evaluation metric.
+
+```{r}
+model.xgb <- xgb.train(param, dtrain, nrounds = 50, watchlist, verbose = 0)
+```
+
+Here is the confusion matrix and accuracy for our training set, followed by the same for the testing set.
+
+```{r}
+pred.y.train <- predict(model.xgb, pred.train.gbm)
+(tab<-table(train.winner.gbm, pred.y.train))
+sum(diag(tab))/sum(tab)
+```
+
+```{r}
+pred.y.test <- predict(model.xgb, pred.test.gbm)
+
+(tab1<-table(test.winner.gbm, pred.y.test))
+
+sum(diag(tab1))/sum(tab1)
+```
+
+Now that we have a model with good accuracy, we explore the feature importance. Of particular interest was the impact player rating had on predicting winner. We also wish to explore which, if any, other features are deemed good predictors of winner.
+
+@Manual{, title = {xgboost: Extreme Gradient Boosting}, author = {Tianqi Chen and Tong He and Michael Benesty and Vadim Khotilovich and Yuan Tang and Hyunsu Cho and Kailong Chen and Rory Mitchell and Ignacio Cano and Tianyi Zhou and Mu Li and Junyuan Xie and Min Lin and Yifeng Geng and Yutian Li and Jiaming Yuan}, year = {2023}, note = {R package version 1.7.5.1}, url = {https://CRAN.R-project.org/package=xgboost}, }
+
+```{r}
+citation("xgboost")
+```
+
+`Gain` is the improvement in accuracy brought by a feature to the branches it is on. `Cover` is related to the second order derivative (or Hessian) of the loss function with respect to a particular variable; thus, a large value indicates a variable has a large potential impact on the loss function and so is important `Frequency` is a simpler way to measure the `Gain.` It just counts the number of times a feature is used in all generated trees.
+
+```{r}
+imp <- xgb.importance(colnames(dtrain), model = model.xgb)
+imp
+xgb.plot.importance(imp)
+
+
+```
