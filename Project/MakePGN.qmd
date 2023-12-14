@@ -5,6 +5,8 @@ df <- df[-which(df["turns"] <= 1), ]
 all_moves <- df["moves"]
 ```
 
+
+
 ```{r}
 # chess_moves <- all_moves[2,]
 
@@ -132,30 +134,15 @@ find_game_type <- function(i) {
   
   moves <- unlist(strsplit(type_code, "+", fixed = TRUE))
   move <- as.numeric(moves[1])
-  print(move)
   if (move <= 5){
     return("bullet")
   }
-  else if (move <= 20){
+  else if (move <= 10){
     return("blitz")
   }
   else {return("rapid")}
   
-  # move_number <- 1
-  # black_castling_move <- NULL
-  # 
-  # for (move in moves) {
-  #   if (grepl("O-O|O-O-O", move)) {
-  #     if (move_number %% 2 == 0) {
-  #       black_castling_move <- (move_number / 2)
-  #     }
-  #   }
-  #   move_number <- move_number + 1
-  # }
-  # if (is.null(black_castling_move)){
-  #   return(0)
-  # }
-  # return(black_castling_move)
+  
 }
 
 
@@ -163,14 +150,23 @@ find_game_type <- function(i) {
 ```
 
 ```{r}
-
+game_types <- c()
+for (i in seq(1:nrow(df))){
+  game_types <- c(game_types, find_game_type(i))
+}
+  
 ```
 
 ```{r}
-
+df["game_type"] <- game_types
 ```
 
 a
+
+```{r}
+table(df["game_type"])
+```
+
 a
 a
 a

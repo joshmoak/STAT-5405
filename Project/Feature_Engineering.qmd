@@ -1,4 +1,12 @@
-This qmd file adds 5 new columns to our data set, derived from current columns
+---
+title: "Project"
+subtitle: "Stats 5405"
+author: "Kevin Russell & Josh Moak"
+format: html
+title-block-style: plain
+---
+
+The following code adds 5 new columns to our data set, derived from current columns. 
 
 ```{r}
 df <- read.csv("chess_games.csv")
@@ -7,8 +15,8 @@ df <- df[-which(df["turns"] <= 1), ]
 
 ```{r}
 # Function to find white castle move
-find_castle_move_white <- function(i) {
-  chess_game <- df["moves"][i,]
+find_castle_move_white <- function(x) {
+  chess_game <- x[11]
   moves <- unlist(strsplit(chess_game, " "))
   move_number <- 1
   white_castling_move <- NULL
@@ -28,8 +36,8 @@ find_castle_move_white <- function(i) {
 }
 
 # Function to find black castle move
-find_castle_move_black <- function(i) {
-  chess_game <- df["moves"][i,]
+find_castle_move_black <- function(x) {
+  chess_game <- x[11]
   moves <- unlist(strsplit(chess_game, " "))
   move_number <- 1
   black_castling_move <- NULL
@@ -49,14 +57,47 @@ find_castle_move_black <- function(i) {
 }
 
 # Function to find white pawn push move
+find_pawn_moves_white <- function(x) {
+  chess_game <- x[11]
+  moves <- unlist(strsplit(chess_game, " "))
+  pawn_moves <- 0
+  pattern <- "^[a-h][1-8x]"
+  move_number <- 1
+
+  for (move in moves) {
+    if (grepl(pattern, move)) {
+      if (move_number %% 2 == 1) {
+        pawn_moves <- pawn_moves + 1
+      }
+    }
+    move_number <- move_number + 1
+  }
+  return(pawn_moves)
+}
 
 
 # Function to find black pawn push move
+find_pawn_moves_black <- function(x) {
+  chess_game <- x[11]
+  moves <- unlist(strsplit(chess_game, " "))
+  pawn_moves <- 0
+  pattern <- "^[a-h][1-8x]"
+  move_number <- 1
 
+  for (move in moves) {
+    if (grepl(pattern, move)) {
+      if (move_number %% 2 == 0) {
+        pawn_moves <- pawn_moves + 1
+      }
+    }
+    move_number <- move_number + 1
+  }
+  return(pawn_moves)
+}
 
 # Function to find game type
-find_game_type <- function(i) {
-  type_code <- df["time_increment"][i,]
+find_game_type <- function(x) {
+  type_code <- x[6]
   
   moves <- unlist(strsplit(type_code, "+", fixed = TRUE))
   move <- as.numeric(moves[1])
@@ -69,6 +110,18 @@ find_game_type <- function(i) {
   else {return("rapid")}
   
 }
+```
+
+
+```{r}
+
+df$white_castle <- apply(df, 1, FUN = find_castle_move_white)
+df$black_castle <- apply(df, 1, FUN = find_castle_move_black)
+df$white_pawn_moves <- apply(df, 1, FUN = find_pawn_moves_white)
+df$black_pawn_moves <- apply(df, 1, FUN = find_pawn_moves_black)
+df$game_type <- apply(df, 1, FUN = find_game_type)
+
+
 ```
 
 Now, we call each of our functions (takes a minute to run) on all rows of the data
@@ -84,7 +137,15 @@ for (i in seq(1:nrow(df))){
   black_castle <- c(black_castle, find_castle_move_black(i))
 }
 
+white_pawn <- c()
+for (i in seq(1:nrow(df))) {  
+  white_pawn <- c(white_pawn, find_pawn_moves_white(i))
+}
 
+black_pawn <- c()
+for (i in seq(1:nrow(df))) {  
+  black_pawn <- c(black_pawn, find_pawn_moves_black(i))
+}
 
 game_types <- c()
 for (i in seq(1:nrow(df))){
@@ -98,9 +159,11 @@ Finally, we add the new derived/engineered columns to our data frame
 ```{r}
 df["white_castle"] <- white_castle
 df["black_castle"] <- black_castle
-
-
+df["white_pawn_moves"] <- white_pawn
+df["black_pawn_moves"] <- black_pawn
 df["game_type"] <- game_types
 ```
+
+
 
 

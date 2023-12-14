@@ -1,0 +1,175 @@
+---
+title: "A Statistical and Machine Learning Approach to Identifying Key Predictors of Winners of Chess Games"
+subtitle: "Stats 5405 Final Project"
+author: "Kevin Russell & Josh Moak"
+format: html
+title-block-style: plain
+editor: 
+  markdown: 
+    wrap: sentence
+---
+
+## Abstract
+
+We have been contacted by an aspiring chess tutor who would like to gain a greater understanding of what he should teach and what he should expect from his students' games.
+This tutor has provided us with a dataset of over 20,000 games completed on the website lichess.com.
+Each game has data including each move of the game, the ratings of the players, the time format of the game, the opening used, the winner, and the method of victory (if the result was not a draw).
+To do this, we will use our understanding of R to clean the data and create new columns from the game data provided to us.
+Additionally, we will look into using the package chess to aid in both our analysis of the games and in feature engineering.
+We will then use the GLIM methods we have learned in class with other investigative resources (such as decision trees and gradient boosting) to answer questions the chess tutor may have about the games.
+
+## Introduction
+
+Much can be made of the remarkable staying power of chess.
+Though early versions of the game have existed for over a millennium, it continues to permeate the zeitgeist of society into the present both as an intellectual exercise and as a way to pass time with friends.
+Recently, the development of superhuman chess engines such as Stockfish, the success of shows such as Netflix's The Queen's Gambit, and the explosion of online chess have contributed to a larger renaissance of the game.
+As a historical artifact and as a cultural fad, chess has solidified an economic legitimacy that many people are capitalizing on.
+Professional players, chess teachers, and online content creators alike have attempted to bring the game to the masses in exchange for money.
+Because of this, it is essential that an instructor must give the best advice possible, and know as much about the game as they can, as their livelihood (and the future and tradition of chess itself) could depend on it.
+In our hypothetical scenario, we have been consulted by a prospective chess teacher.
+This teacher has provided us with a data set with rows which represent individual games played by online competitors.
+There is information regarding the competitors themselves, the structure of the game, and significantly, the moves of the game themselves.
+Our task is to use those factors to predict the outcome of the game.
+There are a number of reasons why our predictions could be useful.
+The teacher could use our findings to emphasize certain playing styles and de-emphasize others during lessons.
+Additionally, they could scout players for tutoring who show positive tendencies as dictated by our models.
+The goal is to legitimize the teaching process and reputation of our teacher through the use of methodology we have explored in class.
+Our investigation was provoked by a published piece of academic literature entitled Predicting the Outcome of a Chess Game by Statistical and Machine Learning Techniques by Hector Apolo Rosales Pulido.
+In the paper, Pulido uses positions of games after twenty moves to predict eventual outcomes.
+Although we decided to arrive at our predictions through different means, partially owing to the fact that his dataset was over three million rows in length, we found that the problem Pulido attempted to solve was worth investigating for ourselves.
+
+## Data Description
+
+Our data set, which can be found [here](https://www.kaggle.com/datasets/mysarahmadbhat/online-chess-games/data), has 20,058 rows, each representing a complete game of chess played on the popular website lichess.com.
+The 17 columns are described below:
+
+-   `game_id`: A unique integer identifier.
+-   `rated`: A boolean variable that is TRUE if the game was rated.
+-   `turns`: An integer variable showing the number of moves in the given game.
+-   `victory_status`: A character variable taking on one of "Out of Time", "Resign", "Mate", or "Draw". Describes how the game ended.
+-   `winner`: A character variable taking on one of "White", "Black", or "Draw". Describes the winner.
+-   `time_increment`: A character variable describing the timing requirements. For example "15+2" denotes a 15 minute match, with 2 seconds added after each move.
+-   `white_id`: A character variable showing the user name of the user playing white.
+-   `white_rating`: An integer variable showing the Elo rating of the user playing white.
+-   `black_id`: A character variable showing the user name of the user playing black.
+-   `black_rating`: An integer variable showing the Elo rating of the user playing white.
+-   `moves`: A character variable enumerating each move made.
+-   `opening_code`: A character variable describing the ECO (Encyclopedia of Chess Openings) encoding of the opening played.
+-   `opening_moves`: An integer variable describing the number of moves in the opening.
+-   `opening_fullname`: A character variable showing the full name of the opening.
+-   `opening_shortname`: A character variable showing the shortened name of the opening.
+-   `opening_response`: A character variable showing black's response to the opening.
+-   `opening_variation`: A character variable showing the variation of the opening.
+
+Our chess tutor hypothesized that castling earlier, and pushing pawns frequently might result in more wins.
+This led us to add 5 additional columns based on the overall moves of the game.
+To accomplish this, we wrote some custom functions to read the list of moves for each game and pick out when these key moves occurred.
+These 5 columns are described below:
+
+-   `white_castle`: An integer variable describing the move on which white castled. 0 if white did not castle.
+-   `black_castle`: An integer variable describing the move on which black castled. 0 if black did not castle.
+-   `white_pawn`: An integer variable describing the number of times a white pawn was moved.
+-   `black_pawn`: An integer variable describing the number of times a black pawn was moved.
+-   `game_type`: A character variable taking on one of "rapid", "blitz", or "bullet". Variable is "bullet" if the time limit of the match is less than 5, "blitz" if it's less than 10, and "rapid" otherwise.
+
+After this feature engineering, we decided that some variables would not lend themselves well as predictors to the type of analysis we wished to do.
+We trimmed our data set accordingly, one-hot encoded categorical variables.This resulted in a final data frame of 14 predictors (see the statistical methods section for a discussion on which predictors we chose to keep).Finally, we chose a 90-10 train-test split which resulted in 18,036 training observations, and 2,004 testing observations.
+
+## Goal
+
+As mentioned above, our goal is to apply statistical and machine learning methods to identify factors that most greatly influence the outcome of a chess game.
+Our hypothetical chess tutor gave us a few questions he wanted us to answer: Are the ELO ratings of the players good predictors of the winner?
+What are other good predictors of the winner?
+Do certain moves result in more wins?
+Does the timing of certain moves result in more wins?
+Do quicker matches result in fewer mates?
+
+In terms of the data, our goal is to build a handful of models with a sufficiently high predictive power from which we can extract feature importance information.
+
+## Statistical Methods
+
+As the response variable of our data set is categorical, we will initially use GLIM procedures to construct our predictive models.
+The potential outcomes-- a white victory, a draw, and a black victory-- may be considered ordinal by some, where the aforementioned ordering is of decreasing "success" for the competitor playing white.
+Under this assumption, we will model cumulative logits by utilizing the `polr()` function.
+We will fit a model using all of our relevant predictors, a model using none of our predictors, and a model that has undergone stepwise selection, and then we will compare these to determine which is most appropriate for general use.
+We will finally assess the best model's accuracy on both the train and test portion of the data.
+
+Beyond GLIM models, we wish to identify any non-linear relationships that may exist between predictors and the outcome of interest.
+To achieve this, we will choose to use *XGBoost.* When building our *XGBoost* model, we will use a softmax objective function to describe the multi-class outcomes.
+We also hypothesize that a relatively simple model, with a fairly shallow tree, will be best suited for our purposes.
+For our evaluation method, we will use `merror`.
+This describes the number of wrong cases / the total number of cases.
+We plan to train our model for several iterations beyond that which was shown as examples in class.
+Finally, to extract feature importance information, we will use the `xgb::importance()` function which calculates a quantity called *gain.* As described in the documentation of *XGBoost*, "Gain is the improvement in accuracy brought by a feature to the branches it is on".
+
+## Results from the analyses
+
+This block of code allows us to reference variables created in `All_Code.R`.
+Hopefully, it should help keep our results section nice and tidy.
+I also changed the way the 5 new columns are added, it's quicker and more succinct, but still takes about 45 seconds on my machine.
+
+```{r}
+# Load required libraries
+library(this.path) # find where you are
+
+# Note current script location
+current_script_directory <- this.dir()
+
+# Source some local code
+source(file.path(current_script_directory, "All_Code.R"))
+```
+
+Upon building some generalized linear models, we decided to investigate any non-linear or more nuanced relationships that might exist between predictors and the game winner, our outcome of interest.
+Such relationships were found using a gradient boosted model.
+
+After several iterations of hyper parameter tuning, and some feature engineering (described above), our gradient boosted model achieved high accuracy on both the training and test sets when predicting the game winner: 93.96% and 87.97% respectively.
+This allowed us to extract important features.
+
+```{r}
+imp
+```
+
+The above table enumerates a few metrics for each predictor. The docs for *XGBoost* explained each clearly: "`Gain` is the improvement in accuracy brought by a feature to the branches it is on. `Cover` is related to the second order derivative (or Hessian) of the loss function with respect to a particular variable; thus, a large value indicates a variable has a large potential impact on the loss function and so is important `Frequency` is a simpler way to measure the `Gain.` It just counts the number of times a feature is used in all generated trees."
+
+Below, is a plot of `Gain` for each predictor. 
+
+```{r}
+xgb.plot.importance(imp)
+```
+
+Of particular interest here is the most important feature: `turns`. While the GLIM models ran previously helped us to observe that a linear relationship exists between the players rating and the outcome as well as between key moves and outcome, they did not report `turns` as an important feature. 
+
+Observe below that for games with less than the average number of turns, there was a smaller proportion of draws. It seems that longer games tend to end in draws more frequently. 
+```{r}
+t0 <- table(df[df$turns < mean(df[,"turns"]), ]["winner"])
+t0 / sum(t0)
+t1 <- table(df[df$turns >= mean(df[,"turns"]), ]["winner"])
+t1 / sum(t1)
+```
+
+I performed three statistical tests. The first compared the proportion of draws between games with low turns and games with high turns. The second two did the same, but for proportion of black wins and proportion of white wins respectively.
+
+```{r}
+res1 <- prop.test(x = c(t0["Draw"], t1["Draw"]), n = c(sum(t0), sum(t1)), correct = FALSE)
+res1$p.value
+res2 <- prop.test(x = c(t0["Black"], t1["Black"]), n = c(sum(t0), sum(t1)), correct = FALSE)
+res2$p.value
+res3 <- prop.test(x = c(t0["White"], t1["White"]), n = c(sum(t0), sum(t1)), correct = FALSE)
+res3$p.value
+```
+
+At the $\alpha = 0.05$ significance level, we can see that there is evidence to conclude that games with a lot of turns result in draws more frequently than games with few turns. We also have evidence to conclude that games with a lot of turns result in white winning less frequently than in games with few turns. In the case of black winning, we fail to reject the null hypothesis and conclude that the two proportions (in short games versus long games) of black winning are equal. 
+
+
+
+## Summary and conclusion
+
+
+1-2 pages.
+Did you acheieve your goal?
+Which method (out of what you tried) do you prefer?
+What other extensions are possible in the future?
+
+## References
+
+you can include references for the data, and prior work you may have referred to.
