@@ -11,6 +11,7 @@ The following code adds 5 new columns to our data set, derived from current colu
 ```{r}
 df <- read.csv("chess_games.csv")
 df <- df[-which(df["turns"] <= 1), ]
+getwd()
 ```
 
 ```{r}
