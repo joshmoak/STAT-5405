@@ -31,7 +31,7 @@ This teacher has provided us with a data set with rows which represent individua
 There is information regarding the competitors themselves, the structure of the game, and significantly, the moves of the game themselves.
 Our task is to use those factors to predict the outcome of the game.
 There are a number of reasons why our predictions could be useful.
-The teacher could use our findings to emphasize certain playing styles and deemphasize others during lessons.
+The teacher could use our findings to emphasize certain playing styles and de-emphasize others during lessons.
 Additionally, they could scout players for tutoring who show positive tendencies as dictated by our models.
 The goal is to legitimize the teaching process and reputation of our teacher through the use of methodology we have explored in class.
 Our investigation was provoked by a published piece of academic literature entitled Predicting the Outcome of a Chess Game by Statistical and Machine Learning Techniques by Hector Apolo Rosales Pulido.
@@ -40,7 +40,7 @@ Although we decided to arrive at our predictions through different means, partia
 
 ## Data Description
 
-Our data set, which can be found at https://www.kaggle.com/datasets/mysarahmadbhat/online-chess-games/data, has 20,058 rows, each representing a complete game of chess played on the popular website lichess.com.
+Our data set, which can be found [here](https://www.kaggle.com/datasets/mysarahmadbhat/online-chess-games/data), has 20,058 rows, each representing a complete game of chess played on the popular website lichess.com.
 The 17 columns are described below:
 
 -   `game_id`: A unique integer identifier.
@@ -66,18 +66,11 @@ This led us to add 5 additional columns based on the overall moves of the game.
 To accomplish this, we wrote some custom functions to read the list of moves for each game and pick out when these key moves occurred.
 These 5 columns are described below:
 
--   `white_castle`: An integer variable describing the move on which white castled.
-    0 if white did not castle.
-
--   `black_castle`: An integer variable describing the move on which black castled.
-    0 if black did not castle.
-
+-   `white_castle`: An integer variable describing the move on which white castled. 0 if white did not castle.
+-   `black_castle`: An integer variable describing the move on which black castled. 0 if black did not castle.
 -   `white_pawn`: An integer variable describing the number of times a white pawn was moved.
-
 -   `black_pawn`: An integer variable describing the number of times a black pawn was moved.
-
--   `game_type`: A character variable taking on one of "rapid", "blitz", or "bullet".
-    Variable is "bullet" if the time limit of the match is less than 5, "blitz" if it's less than 10, and "rapid" otherwise.
+-   `game_type`: A character variable taking on one of "rapid", "blitz", or "bullet". Variable is "bullet" if the time limit of the match is less than 5, "blitz" if it's less than 10, and "rapid" otherwise.
 
 After this feature engineering, we decided that some variables would not lend themselves well as predictors to the type of analysis we wished to do.
 We trimmed our data set accordingly, one-hot encoded categorical variables.This resulted in a final data frame of 14 predictors (see the statistical methods section for a discussion on which predictors we chose to keep).Finally, we chose a 90-10 train-test split which resulted in 18,036 training observations, and 2,004 testing observations.
@@ -111,14 +104,66 @@ Finally, to extract feature importance information, we will use the `xgb::import
 
 ## Results from the analyses
 
-Use a qmd file an include R code chunks.
-I expect your project to do be done in R only.
-Make sure you highlight (bold font say) the main results.
-To avoid showing a huge amount of code or output, feel free to use eval = FALSE abd/or echo = FALSE in the R code chunks.
-All the extra code and output can go into Supplementary files.
-Typically, the main part of the results *must not exceed* 6-8 pages.
+This block of code allows us to reference variables created in `All_Code.R`.
+Hopefully, it should help keep our results section nice and tidy.
+I also changed the way the 5 new columns are added, it's quicker and more succinct, but still takes about 45 seconds on my machine.
+
+```{r}
+# Load required libraries
+library(this.path) # find where you are
+
+# Note current script location
+current_script_directory <- this.dir()
+
+# Source some local code
+source(file.path(current_script_directory, "All_Code.R"))
+```
+
+Upon building some generalized linear models, we decided to investigate any non-linear or more nuanced relationships that might exist between predictors and the game winner, our outcome of interest.
+Such relationships were found using a gradient boosted model.
+
+After several iterations of hyper parameter tuning, and some feature engineering (described above), our gradient boosted model achieved high accuracy on both the training and test sets when predicting the game winner: 93.96% and 87.97% respectively.
+This allowed us to extract important features.
+
+```{r}
+imp
+```
+
+The above table enumerates a few metrics for each predictor. The docs for *XGBoost* explained each clearly: "`Gain` is the improvement in accuracy brought by a feature to the branches it is on. `Cover` is related to the second order derivative (or Hessian) of the loss function with respect to a particular variable; thus, a large value indicates a variable has a large potential impact on the loss function and so is important `Frequency` is a simpler way to measure the `Gain.` It just counts the number of times a feature is used in all generated trees."
+
+Below, is a plot of `Gain` for each predictor. 
+
+```{r}
+xgb.plot.importance(imp)
+```
+
+Of particular interest here is the most important feature: `turns`. While the GLIM models ran previously helped us to observe that a linear relationship exists between the players rating and the outcome as well as between key moves and outcome, they did not report `turns` as an important feature. 
+
+Observe below that for games with less than the average number of turns, there was a smaller proportion of draws. It seems that longer games tend to end in draws more frequently. 
+```{r}
+t0 <- table(df[df$turns < mean(df[,"turns"]), ]["winner"])
+t0 / sum(t0)
+t1 <- table(df[df$turns >= mean(df[,"turns"]), ]["winner"])
+t1 / sum(t1)
+```
+
+I performed three statistical tests. The first compared the proportion of draws between games with low turns and games with high turns. The second two did the same, but for proportion of black wins and proportion of white wins respectively.
+
+```{r}
+res1 <- prop.test(x = c(t0["Draw"], t1["Draw"]), n = c(sum(t0), sum(t1)), correct = FALSE)
+res1$p.value
+res2 <- prop.test(x = c(t0["Black"], t1["Black"]), n = c(sum(t0), sum(t1)), correct = FALSE)
+res2$p.value
+res3 <- prop.test(x = c(t0["White"], t1["White"]), n = c(sum(t0), sum(t1)), correct = FALSE)
+res3$p.value
+```
+
+At the $\alpha = 0.05$ significance level, we can see that there is evidence to conclude that games with a lot of turns result in draws more frequently than games with few turns. We also have evidence to conclude that games with a lot of turns result in white winning less frequently than in games with few turns. In the case of black winning, we fail to reject the null hypothesis and conclude that the two proportions (in short games versus long games) of black winning are equal. 
+
+
 
 ## Summary and conclusion
+
 
 1-2 pages.
 Did you acheieve your goal?

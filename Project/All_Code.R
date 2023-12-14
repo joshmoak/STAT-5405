@@ -8,12 +8,12 @@ df <- read.csv("chess_games.csv")
 df <- df[-which(df["turns"] <= 1), ]
 
 # Function to find white castle move
-find_castle_move_white <- function(i) {
-  chess_game <- df["moves"][i,]
+find_castle_move_white <- function(x) {
+  chess_game <- x[11]
   moves <- unlist(strsplit(chess_game, " "))
   move_number <- 1
   white_castling_move <- NULL
-
+  
   for (move in moves) {
     if (grepl("O-O|O-O-O", move)) {
       if (move_number %% 2 == 1) {
@@ -29,12 +29,12 @@ find_castle_move_white <- function(i) {
 }
 
 # Function to find black castle move
-find_castle_move_black <- function(i) {
-  chess_game <- df["moves"][i,]
+find_castle_move_black <- function(x) {
+  chess_game <- x[11]
   moves <- unlist(strsplit(chess_game, " "))
   move_number <- 1
   black_castling_move <- NULL
-
+  
   for (move in moves) {
     if (grepl("O-O|O-O-O", move)) {
       if (move_number %% 2 == 0) {
@@ -50,13 +50,13 @@ find_castle_move_black <- function(i) {
 }
 
 # Function to find white pawn push move
-find_pawn_moves_white <- function(i) {
-  chess_game <- df["moves"][i,]
+find_pawn_moves_white <- function(x) {
+  chess_game <- x[11]
   moves <- unlist(strsplit(chess_game, " "))
   pawn_moves <- 0
   pattern <- "^[a-h][1-8x]"
   move_number <- 1
-
+  
   for (move in moves) {
     if (grepl(pattern, move)) {
       if (move_number %% 2 == 1) {
@@ -70,13 +70,13 @@ find_pawn_moves_white <- function(i) {
 
 
 # Function to find black pawn push move
-find_pawn_moves_black <- function(i) {
-  chess_game <- df["moves"][i,]
+find_pawn_moves_black <- function(x) {
+  chess_game <- x[11]
   moves <- unlist(strsplit(chess_game, " "))
   pawn_moves <- 0
   pattern <- "^[a-h][1-8x]"
   move_number <- 1
-
+  
   for (move in moves) {
     if (grepl(pattern, move)) {
       if (move_number %% 2 == 0) {
@@ -89,8 +89,8 @@ find_pawn_moves_black <- function(i) {
 }
 
 # Function to find game type
-find_game_type <- function(i) {
-  type_code <- df["time_increment"][i,]
+find_game_type <- function(x) {
+  type_code <- x[6]
   
   moves <- unlist(strsplit(type_code, "+", fixed = TRUE))
   move <- as.numeric(moves[1])
@@ -104,38 +104,12 @@ find_game_type <- function(i) {
   
 }
 
-# Now, we call each of our functions (takes a minute to run) on all rows of the data
-white_castle <- c()
-for (i in seq(1:nrow(df))) {  
-  white_castle <- c(white_castle, find_castle_move_white(i))
-}
+df$white_castle <- apply(df, 1, FUN = find_castle_move_white)
+df$black_castle <- apply(df, 1, FUN = find_castle_move_black)
+df$white_pawn_moves <- apply(df, 1, FUN = find_pawn_moves_white)
+df$black_pawn_moves <- apply(df, 1, FUN = find_pawn_moves_black)
+df$game_type <- apply(df, 1, FUN = find_game_type)
 
-black_castle <- c()
-for (i in seq(1:nrow(df))){
-  black_castle <- c(black_castle, find_castle_move_black(i))
-}
-
-white_pawn <- c()
-for (i in seq(1:nrow(df))) {  
-  white_pawn <- c(white_pawn, find_pawn_moves_white(i))
-}
-
-black_pawn <- c()
-for (i in seq(1:nrow(df))) {  
-  black_pawn <- c(black_pawn, find_pawn_moves_black(i))
-}
-
-game_types <- c()
-for (i in seq(1:nrow(df))){
-  game_types <- c(game_types, find_game_type(i))
-}
-
-# Finally, we add the new derived/engineered columns to our data frame
-df["white_castle"] <- white_castle
-df["black_castle"] <- black_castle
-df["white_pawn_moves"] <- white_pawn
-df["black_pawn_moves"] <- black_pawn
-df["game_type"] <- game_types
 
 # Create training and testing sets
 set.seed(69420)
@@ -229,9 +203,21 @@ pred.y.test <- predict(model.xgb, pred.test.gbm)
 sum(diag(tab1))/sum(tab1)
 
 
-(imp <- xgb.importance(colnames(dtrain), model = model.xgb))
-xgb.plot.importance(imp)
+imp <- xgb.importance(colnames(dtrain), model = model.xgb)
 
+# Check proportions of winner in each category
+t0 <- table(df[df$turns < mean(df[,"turns"]), ]["winner"])
+t0 / sum(t0)
+t1 <- table(df[df$turns >= mean(df[,"turns"]), ]["winner"])
+t1 / sum(t1)
+
+# test for significance
+res1 <- prop.test(x = c(t0["Draw"], t1["Draw"]), n = c(sum(t0), sum(t1)), correct = FALSE)
+res1$p.value
+res2 <- prop.test(x = c(t0["Black"], t1["Black"]), n = c(sum(t0), sum(t1)), correct = FALSE)
+res2$p.value
+res3 <- prop.test(x = c(t0["White"], t1["White"]), n = c(sum(t0), sum(t1)), correct = FALSE)
+res3$p.value
 
 
 

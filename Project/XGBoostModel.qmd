@@ -119,18 +119,20 @@ sum(diag(tab1))/sum(tab1)
 
 Now that we have a model with good accuracy, we explore the feature importance. Of particular interest was the impact player rating had on predicting winner. We also wish to explore which, if any, other features are deemed good predictors of winner.
 
-@Manual{, title = {xgboost: Extreme Gradient Boosting}, author = {Tianqi Chen and Tong He and Michael Benesty and Vadim Khotilovich and Yuan Tang and Hyunsu Cho and Kailong Chen and Rory Mitchell and Ignacio Cano and Tianyi Zhou and Mu Li and Junyuan Xie and Min Lin and Yifeng Geng and Yutian Li and Jiaming Yuan}, year = {2023}, note = {R package version 1.7.5.1}, url = {https://CRAN.R-project.org/package=xgboost}, }
-
-```{r}
-citation("xgboost")
-```
 
 `Gain` is the improvement in accuracy brought by a feature to the branches it is on. `Cover` is related to the second order derivative (or Hessian) of the loss function with respect to a particular variable; thus, a large value indicates a variable has a large potential impact on the loss function and so is important `Frequency` is a simpler way to measure the `Gain.` It just counts the number of times a feature is used in all generated trees.
 
 ```{r}
-imp <- xgb.importance(colnames(dtrain), model = model.xgb)
-imp
+(imp <- xgb.importance(colnames(dtrain), model = model.xgb))
 xgb.plot.importance(imp)
 
 
 ```
+
+
+
+
+
+
+
+
