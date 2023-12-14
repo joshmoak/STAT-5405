@@ -1,0 +1,400 @@
+---
+title: "Untitled"
+author: "Kevin Russell"
+date: '2023-12-07'
+output: html_document
+---
+
+```{r}
+library(dplyr) 
+library(ordinal) 
+library(fastDummies)
+library(car)
+library(sure) 
+library(MASS) 
+library(nnet)
+```
+
+First, we will treat the response variable as though it were ordinal. This allows us to model cumulative logits. 
+
+```{r}
+df <- read.csv("C:/Users/kruss/Downloads/chess.csv")
+```
+
+We will one-hot encode the time control category into three game_type categories:
+
+```{r}
+ex.cat <- model.matrix(~ -1 + game_type, 
+                       data = df)
+#head(ex.cat)
+```
+```{r}
+df <- cbind(df, ex.cat)
+#head(df)
+```
+
+Then, we will do our split of the data into train/test, ensuring that there is a roughly equal split of outcomes as well.
+
+```{r}
+# Do 90-10 train-test split of the data - random split
+set.seed(123457)
+strats <- as.factor(df$winner)
+rr <- split(1:length(strats), strats)
+p<- 0.9
+idx <- 
+  sort(as.numeric(unlist(sapply(rr, function(x) sample(x, length(x) * p)))))
+df.train <- df[idx,]
+table(df.train$winner)/nrow(df.train)
+```
+
+```{r}
+df.test <- df[-idx,]
+table(df.test$winner)/nrow(df.test)
+```
+We will then process the data to remove unwanted or redundant columns and change our response variables to numeric factors. Lower values are better for white (1 is a white win, 2 is a draw, 3 is a black win).
+
+
+```{r}
+df2.train = subset(df.train, select = -c(white_id, black_id, game_id, opening_fullname, opening_response, opening_variation, moves, time_increment, opening_code, opening_shortname, victory_status, game_type, X) )
+
+df2.train$rated <- as.numeric(df2.train$rated)
+
+char_columns <- sapply
+
+df2.train$winner <- factor(df2.train$winner, levels = c("White", "Draw", "Black"), labels = c(1, 2, 3))
+
+df2.train <- na.omit(df2.train)
+
+#head(df2.train)
+```
+
+Additionally, we can check for multicollinearity by examining correlations among predictors in the training portion of the data.
+
+```{r}
+pred.df <- subset(df2.train, select=-c(winner)) #data frame of predictors only
+cor.pred <- cor(pred.df)
+off.diag <- function(x) x[col(x) > row(x)]
+v <- off.diag(cor.pred)
+table(v >=0.95)
+```
+In this case, we find no correlations exceeding 0.95.
+
+Now we will use the polr() function to fit a PO model. This initial model has every factor remaining in our dataframe. 
+```{r}
+full.model <- polr(formula = as.factor(winner) ~ rated + turns + game_typeblitz + game_typebullet + game_typerapid + black_rating + white_rating + 
+    black_castle + white_castle + black_pawn_moves + white_pawn_moves + 
+    opening_moves, data = df2.train)
+
+full.model
+```
+We see that the AIC value of this model is 27808.05. Using this metric, we can compare the null model, and the stepwise selection model. 
+
+```{r}
+null.model <- polr(as.factor(winner) ~ 1, data = df2.train)
+
+summary(null.model)  
+```
+
+```{r}
+(coef.table2 <- coef(summary(null.model)))
+p <- pnorm(abs(coef.table2[, "t value"]), lower.tail = FALSE) * 2
+```
+```{r}
+(coef.table2 <- cbind(coef.table2, "p value" = p))
+```
+
+The null model has a much higher AIC value, indicating that at least some of the predictors we are including have some impact on the outcome of chess games. 
+
+Now, we will examine the stepwise selection model.
+
+```{r}
+vs.s <- polr(as.factor(winner) ~ 1, data = df2.train)
+mod.s <- stepAIC(vs.s, scope = ~ rated + turns + white_rating + black_rating + opening_moves + white_castle + black_castle + white_pawn_moves + black_pawn_moves + game_typeblitz + game_typebullet + game_type_rapid, trace = FALSE,
+             direction = "both")
+#Takes some time to run
+```
+
+```{r}
+summary(mod.s)
+```
+We find that the stepwise selection model gives us a slightly lower AIC value than the full model, so we will examine this one as a predictor for the outcome of chess games. 
+
+```{r}
+coef.table2 <- coef(summary(mod.s))
+p <- pnorm(abs(coef.table2[, "t value"]), lower.tail = FALSE) * 2
+(coef.table2 <- cbind(coef.table2, "p value" = p))
+```
+We find that an examination of the coefficients of this model tells us that all are significant at the alpha=0.05 level. 
+
+In order to interpret the coefficients, we will compute their odds ratios.
+```{r}
+exp(coef(mod.s))
+```
+```{r}
+exp(0.14924)
+```
+```{r}
+exp(0.37043)
+```
+If there were no predictors, the log odds of white winning relative to a draw or a black win is 0.14924. That is, the odds of a white win relative to a draw or black win are exp(0.14924) = 1.1610.
+
+If there were no predictors, the log odds of white winning or a draw relative to a black win is 0.37043. That is, the odds of a white win or draw relative to a black win are exp(0.37043) = 1.4484.
+
+Let us interpret the coefficient black_castle. At the alpha=0.05 level, black_castle is significant. The predicted coefficient for black_castle is 0.02424. If a black castle is delayed by one move, with all other predictors fixed, we expect log odds of each level to increase by 0.02424. The effect is to multiply the odds in each level by exp(0.02424) = 1.0245 for each move increase in black_castle.
+
+Now, we can examine our stepwise selection model on the test and train data, and see how it performed. 
+
+```{r}
+df2.test = subset(df.test, select = -c(white_id, black_id, game_id, opening_fullname, opening_response, opening_variation, moves, time_increment, opening_code, opening_shortname, victory_status, game_type, X) )
+
+df2.test$rated <- as.numeric(df2.test$rated)
+
+char_columns <- sapply
+
+df2.test$winner <- factor(df2.test$winner, levels = c("White", "Draw", "Black"), labels = c(1, 2, 3))
+
+df2.test <- na.omit(df2.test)
+
+#head(df2.test)
+```
+
+
+
+```{r}
+df2.test$pred3 <- predict(mod.s, newdata = df2.test, type = "class") 
+(ctable.pred3 <- table(df2.test$pred3, df2.test$winner))# classification table
+```
+
+```{r}
+round((sum(diag(ctable.pred3))/sum(ctable.pred3))*100, 2) # accuracy 
+```
+We can see that the model correctly classifies 62.04% of the test examples it is given.
+
+```{r}
+df2.train$pred3 <- predict(mod.s, newdata = df2.train, type = "class") 
+ctable.pred3 <- table(df2.train$pred3, df2.train$winner) # classification table
+round((sum(diag(ctable.pred3))/sum(ctable.pred3))*100, 2) # accuracy 
+```
+The train data is at an accuracy of 63%, which is around 1% higher than the test data. This is good evidence that this model is not overfitting the data.
+
+We will now carry out a procedure as though the data were nominally scaled. 
+
+
+```{r}
+set.seed(123467)
+strats <- as.factor(df$winner)
+rr <- split(1:length(strats), strats)
+p<- 0.9
+idx <- 
+  sort(as.numeric(unlist(sapply(rr, function(x) sample(x, length(x) * p)))))
+df.train <- df[idx,]
+table(df.train$winner)/nrow(df.train)
+```
+
+```{r}
+df.test <- df[-idx,]
+table(df.test$winner)/nrow(df.test)
+```
+Checking the groups' outcomes reveals that the proportions of black win, white win, and draw are very similar between the groups. Therefore, we can carry out our model building process.
+
+First, we will clean the data a bit. There are a lot of categories that we don't necessarily need, and a lot of categories that have many factors, and are explained by other factors. We first subset the data to our desired columns, then we convert the char columns to factor columns. Then, we use the multinom() function to fit a multinomial logit model to the 3 outcome types (black, white, draw).
+
+
+```{r}
+df2.train = subset(df2.train, select = -c(pred3) )
+
+char_columns <- sapply(df.train, is.character)
+
+df.train[char_columns] <- lapply(df.train[char_columns], as.factor)
+
+fit.gl <- multinom(as.factor(winner) ~ ., data = df2.train)
+```
+
+
+```{r}
+summary(fit.gl)
+```
+In this case, white victory is the baseline level. We can see that pawn moves for white, for instance, has a large coefficient compared to its standard error, meaning that it is significant in predicting whether a match will be a draw or a black victory. Additionally, it, and white rating have negative coefficients, which makes intuitive sense, as the more highly rated the player using white is, or the more they improve their position by moving pawns, the more theoretically likely they are to win. Using these coefficients, we can construct a classification table to examine the accuracy our model has achieved for the train and test data. First, for the test:
+
+```{r}
+df2.test$pred <- predict(fit.gl, newdata = df2.test, type = "class")
+table <- cbind(df2.test$winner, df2.test$pred)
+```
+
+```{r}
+ctable.pred <- table(df2.test$winner, df2.test$pred) 
+ctable.pred
+```
+
+```{r}
+round((sum(diag(ctable.pred))/sum(ctable.pred))*100, 2) #test accuracy
+```
+We find that 61.9% of the test examples are correctly classified by this model. We also see that the model is very reluctant to predict a draw-- while draws are around five percent of the test data, the model predicts a draw only 6 times out of over 2,000. Importantly, this model's performance is very similar to that of the ordinal model, which had a test accuracy of 62.0%.
+
+The train data validation tells a similar story.
+```{r}
+df2.train$pred <- predict(fit.gl, newdata = df2.train, type = "class")
+table <- cbind(df2.train$winner, df.train$pred)
+```
+
+```{r}
+ctable.pred <- table(df2.train$winner, df2.train$pred) 
+ctable.pred
+```
+
+```{r}
+round((sum(diag(ctable.pred))/sum(ctable.pred))*100, 2) #train accuracy
+```
+The train data accuracy is very similar, at just under 63 percent. This is evidence in support of the fact that this model is not overfitting the data, Additionally, there are very few draws predicted by this model. 
+
+We will now examine the data in a different way. Though there are three outcomes-- white winning, black winning, and draw-- the majority of outcomes are either white winning or black winning. 
+
+```{r}
+df <- read.csv("C:/Users/kruss/Downloads/chess.csv")
+table(df$winner)/nrow(df)
+```
+We will delete the games which ended in a draw, and pretend that we are asked to predict games that end in a decisive result. This allows us to use different techniques corresponding to binary response variables. 
+
+```{r}
+df <- subset(df, winner != "Draw")
+table(df$winner)/nrow(df)
+```
+Now, we assign a white victory to a '0' and a black victory to a '1'.
+
+```{r}
+df$winner[df$winner == "White"] <- 0
+df$winner[df$winner == "Black"] <- 1
+df$winner <- as.factor(df$winner)
+#head(df)
+```
+
+We will use our train and test split to construct a binary logit; model with all predictors.
+
+```{r}
+ex.cat <- model.matrix(~ -1 + game_type, 
+                       data = df)
+df <- cbind(df, ex.cat)
+
+df = subset(df, select = -c(white_id, black_id, game_id, opening_fullname, opening_response, opening_variation, moves, time_increment, opening_code, opening_shortname, victory_status, game_type, X) )
+
+df$rated <- as.numeric(df$rated)
+
+#head(df)
+```
+```{r}
+set.seed(123457)
+train.prop <- 0.90
+strats <- df$winner
+df$winner <- as.factor(df$winner)
+rr <- split(1:length(strats), strats)
+idx <- sort(as.numeric(unlist(sapply(rr, 
+        function(x) sample(x, length(x)*train.prop)))))
+df.train <- df[idx, ]
+df.test <- df[-idx, ]
+```
+
+```{r}
+summary(df.train$winner)/nrow(df.train)
+```
+```{r}
+summary(df.test$winner)/nrow(df.test)
+```
+As this is satisfactory, we can begin our analysis. First, we will fit a logit model with all of our predictors. 
+
+```{r}
+full.logit <- glm(winner ~ . ,data = df.train, 
+                  family = binomial(link = "logit"))
+summary(full.logit)
+```
+We see from the results that 6 variables are significant at the alpha = 0.05 level for explaining the incidence of a black victory in a decisive game of chess. We have a null deviance of 23780 on 17,179 DF and an AIC value of 20949. We can take a look at the spread of the residuals:
+
+```{r}
+full.logit.res <- resid(full.logit, type = "deviance") 
+summary(full.logit.res)
+```
+And compare the full model to the null model:
+
+```{r}
+null.logit <- glm(winner ~ 1, data = df.train, 
+                  family = binomial(link = "logit"))
+summary(null.logit)
+```
+
+```{r}
+# Null hypothesis: Test prefers null model
+#Alternative hypothesis: Test prefers full model
+(an.nb <- anova(null.logit, full.logit, test = "Chisq"))
+```
+The very small p-value shows that the data rejects the null model and prefers the full model. Now, we will fit the both ways model, and compare that fit to the full model.
+
+```{r}
+both.logit <- step(null.logit, list(lower = formula(null.logit),
+                                    upper = formula(full.logit)),
+                   direction = "both", trace = 0, data = df.train)
+formula(both.logit)
+```
+
+```{r}
+summary(both.logit)
+```
+We can see that six out of the eight variables are significant in this model, and the AIC is lower than the AIC of the full model. We can now compare the full model and the reduced model to see which the data prefers. 
+
+```{r}
+# Null hypothesis: Test prefers both model
+#Alternative hypothesis: Test prefers full model
+(an.nb <- anova(both.logit, full.logit, test = "Chisq"))
+```
+We can see that the large p-value indicates that the test prefers the both model. We can also examine the residual deviances for all three models as follows: 
+
+```{r}
+null.logit$deviance
+```
+```{r}
+full.logit$deviance
+```
+```{r}
+both.logit$deviance
+```
+The both model's residual deviance is marginally higher than the full model's residual deviance, even though its AIC is lower than the full model's AIC. Because of these conflicting metrics, we can examine each of the models, and assess their train and test accuracy. 
+
+First, we will examine the full model. 
+
+```{r}
+pred.full <- predict(full.logit, newdata = df.test, type = "response")
+```
+
+```{r}
+(table.full <- table(pred.full > 0.5, df.test$winner))
+```
+```{r}
+(accuracy.full <- round((sum(diag(table.full))/sum(table.full))*100, 3))
+```
+We get an accuracy for the full model of 66.754% on the test set. We can also use the auc measurement to find another value that uses sensitivity and specificity to assess the adequacy of the model.
+
+```{r}
+library(pROC)
+roc.full <- roc(df.test$winner ~ pred.full)
+plot.roc(roc.full, legacy.axes = TRUE, print.auc = TRUE)
+```
+We see that we get an AUC value of 0.735, which indicates that the full model is a fair indicator of the victor in decisive chess matches. 
+
+Now, we do the same analysis for the both model:
+
+
+```{r}
+pred.both <- predict(both.logit, newdata = df.test, type = "response")
+```
+
+```{r}
+(table.both <- table(pred.both > 0.5, df.test$winner))
+```
+```{r}
+(accuracy.both <- round((sum(diag(table.both))/sum(table.both))*100, 3))
+```
+We get an accuracy for the both model of 66.754% on the test set, which is the same as the accuracy for the full model. We can also use the auc measurement to find another value that uses sensitivity and specificity to assess the adequacy of the both model.
+
+```{r}
+roc.both <- roc(df.test$winner ~ pred.both)
+plot.roc(roc.both, legacy.axes = TRUE, print.auc = TRUE)
+```
+We see that we get an AUC value of 0.735, which indicates that the both model is a fair indicator of the victor in decisive chess matches. As the prior model comparisons indicated, these models are very similar in their predictive ability, but as the both model is more parsimonious, it seems as though it would be a slightly better candidate for further use. 
