@@ -94,10 +94,16 @@ Under this assumption, we will model cumulative logits by utilizing the `polr()`
 We will fit a model using all of our relevant predictors, a model using none of our predictors, and a model that has undergone stepwise selection, and then we will compare these to determine which is most appropriate for general use.
 We will finally assess the best model's accuracy on both the train and test portion of the data.
 
-The outcome variable we are studying is unique in that there is a legitimate argument to be made that the three categories may also be nominal. Because of this, we can use slightly different methods to build a model under this assumption. We will use the multinom() function to construct this model and then we can compare its accuracy to that of the best ordinal model.  
+The outcome variable we are studying is unique in that there is a legitimate argument to be made that the three categories may also be nominal.
+Because of this, we can use slightly different methods to build a model under this assumption.
+We will use the multinom() function to construct this model and then we can compare its accuracy to that of the best ordinal model.
 
-Additionally, we can examine only decisive games. This is a valid way to examine data because a high percentage (over 95%) of the examples in our dataset were either white or black victories. Though many professional games end in draws, a higher percentage of amateur games tend to be decisive. If we filter the data in this way, we can use binary GLIM methods to construct a predictive model. We will build a model based on all of our predictors, a model based on none of our predictors, and finally a model based on predictors selected through stepwise means. We can compare these and assess which is the most adequate via accuracy metrics and AUC comparisons. 
-
+Additionally, we can examine only decisive games.
+This is a valid way to examine data because a high percentage (over 95%) of the examples in our dataset were either white or black victories.
+Though many professional games end in draws, a higher percentage of amateur games tend to be decisive.
+If we filter the data in this way, we can use binary GLIM methods to construct a predictive model.
+We will build a model based on all of our predictors, a model based on none of our predictors, and finally a model based on predictors selected through stepwise means.
+We can compare these and assess which is the most adequate via accuracy metrics and AUC comparisons.
 
 Beyond GLIM models, we wish to identify any non-linear relationships that may exist between predictors and the outcome of interest.
 To achieve this, we will choose to use *XGBoost.* When building our *XGBoost* model, we will use a softmax objective function to describe the multi-class outcomes.
@@ -110,10 +116,9 @@ Finally, to extract feature importance information, we will use the `xgb::import
 ## Results from the analyses
 
 This block of code allows us to reference variables created in `All_Code.R`.
-Hopefully, it should help keep our results section nice and tidy.
-I also changed the way the 5 new columns are added, it's quicker and more succinct, but still takes about 45 seconds on my machine.
+We've suppressed all outputs from this chunk.
 
-```{r}
+```{r echo=TRUE, results='hide', warning=FALSE, message=FALSE, fig.show='hide'}
 # Load required libraries
 library(this.path) # find where you are
 
@@ -123,14 +128,29 @@ current_script_directory <- this.dir()
 # Source some local code
 source(file.path(current_script_directory, "All_Code.R"))
 ```
-First, we construct a model under the assumption that the outcome is ordinally distributed. For this segment of the analysis, we will use the following variables: rated, turns, white_rating, black_rating, opening_moves, white_castle, black_castle, white_pawn_moves, black_pawn_moves, and game_type. After ascertaining that the test and train portions of the data had similar shapes, and checking that the chosen features did not exhibit multicollinearity, we constructed null, full, and stepwise models using the polr() function to predict the outcome for chess games. As the stepwise model had the lowest AIC value of the three, it was selected for examination of performance on the train and test sets. 
+
+First, we construct a model under the assumption that the outcome is ordinally distributed.
+For this segment of the analysis, we will use the following variables: rated, turns, white_rating, black_rating, opening_moves, white_castle, black_castle, white_pawn_moves, black_pawn_moves, and game_type.
+After ascertaining that the test and train portions of the data had similar shapes, and checking that the chosen features did not exhibit multicollinearity, we constructed null, full, and stepwise models using the polr() function to predict the outcome for chess games.
+As the stepwise model had the lowest AIC value of the three, it was selected for examination of performance on the train and test sets.
 
 ```{r}
 summary(mod.s)
 
 coef.table2
 ```
-We will now interpret this output. The model chose 8 of the predictors, 7 of which are significant at the alpha=0.05 level. If there were no predictors, the log odds of white winning relative to a draw or a black win is 0.14924. That is, the odds of a white win relative to a draw or black win are exp(0.1087) = 1.1148. If there were no predictors, the log odds of white winning or a draw relative to a black win is 0.3299. That is, the odds of a white win or draw relative to a black win are exp(0.3299) = 1.3908. Let us now interpret the coefficient black_castle. At the alpha=0.05 level, black_castle is significant. The predicted coefficient for black_castle is 0.02454. If a black castle is delayed by one move, with all other predictors fixed, we expect log odds of each level to increase by 0.02424. The effect is to multiply the odds in each level by exp(0.02454) = 1.0245 for each move increase in black_castle.
+
+We will now interpret this output.
+The model chose 8 of the predictors, 7 of which are significant at the $\alpha=0.05$ level.
+If there were no predictors, the log odds of white winning relative to a draw or a black win is 0.14924.
+That is, the odds of a white win relative to a draw or black win are $e^{0.1087} = 1.1148$.
+If there were no predictors, the log odds of white winning or a draw relative to a black win is 0.3299.
+That is, the odds of a white win or draw relative to a black win are $e^{0.3299)} = 1.3908$.
+Let us now interpret the coefficient black_castle.
+At the $\alpha=0.05$ level, black_castle is significant.
+The predicted coefficient for black_castle is 0.02454.
+If a black castle is delayed by one move, with all other predictors fixed, we expect log odds of each level to increase by 0.02424.
+The effect is to multiply the odds in each level by $e^{0.02454} = 1.0245$ for each move increase in black_castle.
 
 We will now assess the accuracy of this model on train and test data.
 
@@ -138,12 +158,17 @@ We will now assess the accuracy of this model on train and test data.
 round((sum(diag(ctable.pred3.train))/sum(ctable.pred3.train))*100, 2) #train data accuracy
 round((sum(diag(ctable.pred3.test))/sum(ctable.pred3.test))*100, 2) #test data accuracy
 ```
-With a 61.43% correct classification rate, the ordinal model does a fair, if not ideal, job of fitting new data. Interestingly, if concerningly, the model seems hesitant to ever predict a draw, and more likely to predict a white victory than it should. 
+
+With a 61.43% correct classification rate, the ordinal model does a fair, if not ideal, job of fitting new data.
+Interestingly, if concerningly, the model seems hesitant to ever predict a draw, and more likely to predict a white victory than it should.
 
 ```{r}
 ctable.pred3.test
 ```
+
 TODO: nominal, binary
+
+### XGBoost
 
 Upon building some generalized linear models, we decided to investigate any non-linear or more nuanced relationships that might exist between predictors and the game winner, our outcome of interest.
 Such relationships were found using a gradient boosted model.
@@ -155,17 +180,21 @@ This allowed us to extract important features.
 imp
 ```
 
-The above table enumerates a few metrics for each predictor. The docs for *XGBoost* explained each clearly: "`Gain` is the improvement in accuracy brought by a feature to the branches it is on. `Cover` is related to the second order derivative (or Hessian) of the loss function with respect to a particular variable; thus, a large value indicates a variable has a large potential impact on the loss function and so is important `Frequency` is a simpler way to measure the `Gain.` It just counts the number of times a feature is used in all generated trees."
+The above table enumerates a few metrics for each predictor.
+The docs for *XGBoost* explained each clearly: "`Gain` is the improvement in accuracy brought by a feature to the branches it is on. `Cover` is related to the second order derivative (or Hessian) of the loss function with respect to a particular variable; thus, a large value indicates a variable has a large potential impact on the loss function and so is important `Frequency` is a simpler way to measure the `Gain.` It just counts the number of times a feature is used in all generated trees."
 
-Below, is a plot of `Gain` for each predictor. 
+Below, is a plot of `Gain` for each predictor.
 
 ```{r}
 xgb.plot.importance(imp)
 ```
 
-Of particular interest here is the most important feature: `turns`. While the GLIM models ran previously helped us to observe that a linear relationship exists between the players rating and the outcome as well as between key moves and outcome, they did not report `turns` as an important feature. 
+Of particular interest here is the most important feature: `turns`.
+While the GLIM models ran previously helped us to observe that a linear relationship exists between the players rating and the outcome as well as between key moves and outcome, they did not report `turns` as an important feature.
 
-Observe below that for games with less than the average number of turns, there was a smaller proportion of draws. It seems that longer games tend to end in draws more frequently. 
+Observe below that for games with less than the average number of turns, there was a smaller proportion of draws.
+It seems that longer games tend to end in draws more frequently.
+
 ```{r}
 t0 <- table(df[df$turns < mean(df[,"turns"]), ]["winner"])
 t0 / sum(t0)
@@ -173,7 +202,9 @@ t1 <- table(df[df$turns >= mean(df[,"turns"]), ]["winner"])
 t1 / sum(t1)
 ```
 
-I performed three statistical tests. The first compared the proportion of draws between games with low turns and games with high turns. The second two did the same, but for proportion of black wins and proportion of white wins respectively.
+I performed three statistical tests.
+The first compared the proportion of draws between games with low turns and games with high turns.
+The second two did the same, but for proportion of black wins and proportion of white wins respectively.
 
 ```{r}
 res1 <- prop.test(x = c(t0["Draw"], t1["Draw"]), n = c(sum(t0), sum(t1)), correct = FALSE)
@@ -184,12 +215,22 @@ res3 <- prop.test(x = c(t0["White"], t1["White"]), n = c(sum(t0), sum(t1)), corr
 res3$p.value
 ```
 
-At the $\alpha = 0.05$ significance level, we can see that there is evidence to conclude that games with a lot of turns result in draws more frequently than games with few turns. We also have evidence to conclude that games with a lot of turns result in white winning less frequently than in games with few turns. In the case of black winning, we fail to reject the null hypothesis and conclude that the two proportions (in short games versus long games) of black winning are equal. 
-
-
+At the $\alpha = 0.05$ significance level, we can see that there is evidence to conclude that games with a lot of turns result in draws more frequently than games with few turns.
+We also have evidence to conclude that games with a lot of turns result in white winning less frequently than in games with few turns.
+In the case of black winning, we fail to reject the null hypothesis and conclude that the two proportions (in short games versus long games) of black winning are equal.
 
 ## Summary and conclusion
 
+To summarize, we found that there are a few useful predictors of a chess game outcome.
+In general, both our GLIM models and our XGBoost model indicated that the rating of each player, the timing of key moves like castling and the frequency of pushing pawns are all important factors that help influence the game outcome.
+Interestingly, a non-linear relationship between the length of the game (number of turns) and the game outcome was found by our XGBoost model.
+This factor turned out to be the most important predictor of game outcome.
+
+It should be noted that while many predictors were deemed important by both models, the XGBoost model had much higher predictive power, and thus is our preferred method.
+Further feature engineering, like the inclusion of columns indicating other key moves beyond castling and pawn moves are possible and likely to help predict the winner.
+
+We recommend that our chess tutor teach his students to castle early in the game, push pawns frequently, and strive to win in as few moves as possible.
+Our analysis indicates that these factors will best help the students of our hypothetical chess tutor to win more games of chess.
 
 1-2 pages.
 Did you achieeve your goal?
@@ -198,4 +239,5 @@ What other extensions are possible in the future?
 
 ## References
 
-you can include references for the data, and prior work you may have referred to.
+https://www.kaggle.com/datasets/mysarahmadbhat/online-chess-games/data
+
