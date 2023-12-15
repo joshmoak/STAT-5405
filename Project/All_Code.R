@@ -123,9 +123,183 @@ test  <- df[-trnset,]
 # ----- SECTION 2: GLIM Stuff -----
 # ---------------------------------------------------------------------------------------
 
+library(dplyr) 
+library(ordinal) 
+library(fastDummies)
+library(car)
+library(sure) 
+library(MASS) 
+library(nnet)
+library(pROC)
 
-# 
+# Ordinal Outcome Assumption
 
+# Preproccessing-- One hot encoding for game type
+ex.cat <- model.matrix(~ -1 + game_type, 
+                       data = df)
+df2 <- cbind(df, ex.cat)
+
+# Eliminate unwanted columns, formatting
+df2 = subset(df2, select = -c(white_id, black_id, game_id, opening_fullname, opening_response, opening_variation, moves, time_increment, opening_code, opening_shortname, victory_status, game_type) )
+df2$rated <- as.numeric(df2$rated)
+char_columns <- sapply
+df2$winner <- factor(df2$winner, levels = c("White", "Draw", "Black"), labels = c(1, 2, 3))
+df2 <- na.omit(df2)
+df2.train <- df2[trnset,]
+df2.test <- df2[-trnset,]
+
+# Ensure split is adequate
+table(df2.train$winner)/nrow(df2.train)
+table(df2.test$winner)/nrow(df2.test)
+
+# Multicollinearity check
+pred.df <- subset(df2.train, select=-c(winner)) #data frame of predictors only
+cor.pred <- cor(pred.df)
+off.diag <- function(x) x[col(x) > row(x)]
+v <- off.diag(cor.pred)
+table(v >=0.95)
+
+#Full model construction
+full.model <- polr(formula = as.factor(winner) ~ rated + turns + game_typeblitz + game_typebullet + game_typerapid + black_rating + white_rating + 
+                     black_castle + white_castle + black_pawn_moves + white_pawn_moves + 
+                     opening_moves, data = df2.train)
+full.model
+
+# Null model construction
+null.model <- polr(as.factor(winner) ~ 1, data = df2.train)
+summary(null.model)
+
+# Null model coefficients
+(coef.table2 <- coef(summary(null.model)))
+p <- pnorm(abs(coef.table2[, "t value"]), lower.tail = FALSE) * 2
+(coef.table2 <- cbind(coef.table2, "p value" = p))
+
+# Stepwise Model
+vs.s <- polr(as.factor(winner) ~ 1, data = df2.train)
+mod.s <- stepAIC(vs.s, scope = ~ rated + turns + white_rating + black_rating + opening_moves + white_castle + black_castle + white_pawn_moves + black_pawn_moves + game_typeblitz + game_typebullet + game_type_rapid, trace = FALSE,
+                 direction = "both")
+summary(mod.s)
+
+# Stepwise Coefficients/Odds Ratios
+coef.table2 <- coef(summary(mod.s))
+p <- pnorm(abs(coef.table2[, "t value"]), lower.tail = FALSE) * 2
+(coef.table2 <- cbind(coef.table2, "p value" = p))
+exp(coef(mod.s))
+
+# Predictions, classification table for test
+df2.test$pred3 <- predict(mod.s, newdata = df2.test, type = "class") 
+(ctable.pred3.test <- table(df2.test$pred3, df2.test$winner))
+round((sum(diag(ctable.pred3.test))/sum(ctable.pred3.test))*100, 2) # accuracy 
+
+# Predictions, classification for train
+df2.train$pred3 <- predict(mod.s, newdata = df2.train, type = "class") 
+ctable.pred3.train <- table(df2.train$pred3, df2.train$winner) # classification table
+round((sum(diag(ctable.pred3.train))/sum(ctable.pred3.train))*100, 2) # accuracy 
+
+# Nominal Outcome Assumption
+
+# Removing the predictions from the test and train sets
+df2.train = subset(df2.train, select = -c(pred3) )
+df2.test = subset(df2.test, select = -c(pred3) )
+
+# Fitting multinomial logit model
+fit.gl <- multinom(as.factor(winner) ~ ., data = df2.train)
+summary(fit.gl)
+
+# Test data predictions and accuracy
+df2.test$pred <- predict(fit.gl, newdata = df2.test, type = "class")
+table <- cbind(df2.test$winner, df2.test$pred)
+ctable.pred.test <- table(df2.test$winner, df2.test$pred) 
+ctable.pred.test
+round((sum(diag(ctable.pred.test))/sum(ctable.pred.test))*100, 2)
+
+# Train data predictions and accuracy
+df2.train$pred <- predict(fit.gl, newdata = df2.train, type = "class")
+table <- cbind(df2.train$winner, df2.train$pred)
+ctable.pred.train <- table(df2.train$winner, df2.train$pred) 
+ctable.pred.train
+round((sum(diag(ctable.pred.train))/sum(ctable.pred.train))*100, 2) #train accuracy
+
+# Binary Outcome Assumption
+
+# Deleting of drawn games, conversion of winner column to factor
+df3 <- subset(df, winner != "Draw")
+table(df3$winner)/nrow(df3)
+df3$winner[df3$winner == "White"] <- 0
+df3$winner[df3$winner == "Black"] <- 1
+df3$winner <- as.factor(df3$winner)
+
+# Preprocessing for df3
+ex.cat <- model.matrix(~ -1 + game_type, 
+                       data = df3)
+df3 <- cbind(df3, ex.cat)
+df3 = subset(df3, select = -c(white_id, black_id, game_id, opening_fullname, opening_response, opening_variation, moves, time_increment, opening_code, opening_shortname, victory_status, game_type) )
+df3$rated <- as.numeric(df3$rated)
+
+# Train/Test (Need new versions, since some rows were deleted)
+set.seed(123467)
+train.prop <- 0.90
+strats <- df3$winner
+df3$winner <- as.factor(df3$winner)
+rr <- split(1:length(strats), strats)
+idx <- sort(as.numeric(unlist(sapply(rr, 
+                                     function(x) sample(x, length(x)*train.prop)))))
+df3.train <- df3[idx, ]
+df3.test <- df3[-idx, ]
+
+# Ensure split is roughly equal
+summary(df3.train$winner)/nrow(df3.train)
+summary(df3.test$winner)/nrow(df3.test)
+
+# Fit full binary logit model
+full.logit <- glm(winner ~ . ,data = df3.train, 
+                  family = binomial(link = "logit"))
+summary(full.logit)
+
+# Residual spread for full model
+full.logit.res <- resid(full.logit, type = "deviance") 
+summary(full.logit.res)
+
+# Null model construction
+null.logit <- glm(winner ~ 1, data = df3.train, 
+                  family = binomial(link = "logit"))
+summary(null.logit)
+
+# Anova comparison of null and full model
+(an.nb <- anova(null.logit, full.logit, test = "Chisq"))
+
+# Stepwise model construction
+both.logit <- step(null.logit, list(lower = formula(null.logit),
+                                    upper = formula(full.logit)),
+                   direction = "both", trace = 0, data = df3.train)
+formula(both.logit)
+summary(both.logit)
+
+# Anova comparison of stepwise and full model
+(an.nb <- anova(both.logit, full.logit, test = "Chisq"))
+
+# Residual deviance comparison of all three binary logit models
+null.logit$deviance
+both.logit$deviance
+full.logit$deviance
+
+# Full model predictions, accuracy
+pred.full <- predict(full.logit, newdata = df3.test, type = "response")
+(table.full <- table(pred.full > 0.5, df3.test$winner))
+(accuracy.full <- round((sum(diag(table.full))/sum(table.full))*100, 3))
+
+# Full model ROC analysis
+roc.full <- roc(df3.test$winner ~ pred.full)
+plot.roc(roc.full, legacy.axes = TRUE, print.auc = TRUE)
+
+# Both model predictions, accuracy
+pred.both <- predict(both.logit, newdata = df3.test, type = "response")
+(table.both <- table(pred.both > 0.5, df3.test$winner))
+(accuracy.both <- round((sum(diag(table.both))/sum(table.both))*100, 3))
+
+# Both model ROC analysis
+roc.both <- roc(df3.test$winner ~ pred.both)
+plot.roc(roc.both, legacy.axes = TRUE, print.auc = TRUE)
 
 # ---------------------------------------------------------------------------------------
 # ----- SECTION 3: XGBoost model -----
