@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.353">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Kevin Russell &amp; Josh Moak">
+
+<title>A Statistical and Machine Learning Approach to Identifying Key Predictors of Winners of Chess Games</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="Results_files/libs/clipboard/clipboard.min.js"></script>
+<script src="Results_files/libs/quarto-html/quarto.js"></script>
+<script src="Results_files/libs/quarto-html/popper.min.js"></script>
+<script src="Results_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="Results_files/libs/quarto-html/anchor.min.js"></script>
+<link href="Results_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="Results_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="Results_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="Results_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="Results_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">A Statistical and Machine Learning Approach to Identifying Key Predictors of Winners of Chess Games</h1>
+<p class="subtitle lead">Stats 5405 Final Project</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Kevin Russell &amp; Josh Moak </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<section id="abstract" class="level2">
+<h2 class="anchored" data-anchor-id="abstract">Abstract</h2>
+<p>We have been contacted by an aspiring chess tutor who would like to gain a greater understanding of what he should teach and what he should expect from his students’ games. This tutor has provided us with a dataset of over 20,000 games completed on the website lichess.com. Each game has data including each move of the game, the ratings of the players, the time format of the game, the opening used, the winner, and the method of victory (if the result was not a draw). To do this, we will use our understanding of R to clean the data and create new columns from the game data provided to us. Additionally, we will look into using the package chess to aid in both our analysis of the games and in feature engineering. We will then use the GLIM methods we have learned in class with other investigative resources (such as decision trees and gradient boosting) to answer questions the chess tutor may have about the games.</p>
+</section>
+<section id="introduction" class="level2">
+<h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
+<p>Much can be made of the remarkable staying power of chess. Though early versions of the game have existed for over a millennium, it continues to permeate the zeitgeist of society into the present both as an intellectual exercise and as a way to pass time with friends. Recently, the development of superhuman chess engines such as Stockfish, the success of shows such as Netflix’s The Queen’s Gambit, and the explosion of online chess have contributed to a larger renaissance of the game. As a historical artifact and as a cultural fad, chess has solidified an economic legitimacy that many people are capitalizing on. Professional players, chess teachers, and online content creators alike have attempted to bring the game to the masses in exchange for money. Because of this, it is essential that an instructor must give the best advice possible, and know as much about the game as they can, as their livelihood (and the future and tradition of chess itself) could depend on it. In our hypothetical scenario, we have been consulted by a prospective chess teacher. This teacher has provided us with a data set with rows which represent individual games played by online competitors. There is information regarding the competitors themselves, the structure of the game, and significantly, the moves of the game themselves. Our task is to use those factors to predict the outcome of the game. There are a number of reasons why our predictions could be useful. The teacher could use our findings to emphasize certain playing styles and de-emphasize others during lessons. Additionally, they could scout players for tutoring who show positive tendencies as dictated by our models. The goal is to legitimize the teaching process and reputation of our teacher through the use of methodology we have explored in class. Our investigation was provoked by a published piece of academic literature entitled Predicting the Outcome of a Chess Game by Statistical and Machine Learning Techniques by Hector Apolo Rosales Pulido. In the paper, Pulido uses positions of games after twenty moves to predict eventual outcomes. Although we decided to arrive at our predictions through different means, partially owing to the fact that his dataset was over three million rows in length, we found that the problem Pulido attempted to solve was worth investigating for ourselves.</p>
+</section>
+<section id="data-description" class="level2">
+<h2 class="anchored" data-anchor-id="data-description">Data Description</h2>
+<p>Our data set, which can be found <a href="https://www.kaggle.com/datasets/mysarahmadbhat/online-chess-games/data">here</a>, has 20,058 rows, each representing a complete game of chess played on the popular website lichess.com. The 17 columns are described below:</p>
+<ul>
+<li><code>game_id</code>: A unique integer identifier.</li>
+<li><code>rated</code>: A boolean variable that is TRUE if the game was rated.</li>
+<li><code>turns</code>: An integer variable showing the number of moves in the given game.</li>
+<li><code>victory_status</code>: A character variable taking on one of “Out of Time”, “Resign”, “Mate”, or “Draw”. Describes how the game ended.</li>
+<li><code>winner</code>: A character variable taking on one of “White”, “Black”, or “Draw”. Describes the winner.</li>
+<li><code>time_increment</code>: A character variable describing the timing requirements. For example “15+2” denotes a 15 minute match, with 2 seconds added after each move.</li>
+<li><code>white_id</code>: A character variable showing the user name of the user playing white.</li>
+<li><code>white_rating</code>: An integer variable showing the Elo rating of the user playing white.</li>
+<li><code>black_id</code>: A character variable showing the user name of the user playing black.</li>
+<li><code>black_rating</code>: An integer variable showing the Elo rating of the user playing white.</li>
+<li><code>moves</code>: A character variable enumerating each move made.</li>
+<li><code>opening_code</code>: A character variable describing the ECO (Encyclopedia of Chess Openings) encoding of the opening played.</li>
+<li><code>opening_moves</code>: An integer variable describing the number of moves in the opening.</li>
+<li><code>opening_fullname</code>: A character variable showing the full name of the opening.</li>
+<li><code>opening_shortname</code>: A character variable showing the shortened name of the opening.</li>
+<li><code>opening_response</code>: A character variable showing black’s response to the opening.</li>
+<li><code>opening_variation</code>: A character variable showing the variation of the opening.</li>
+</ul>
+<p>Our chess tutor hypothesized that castling earlier, and pushing pawns frequently might result in more wins. This led us to add 5 additional columns based on the overall moves of the game. To accomplish this, we wrote some custom functions to read the list of moves for each game and pick out when these key moves occurred. These 5 columns are described below:</p>
+<ul>
+<li><code>white_castle</code>: An integer variable describing the move on which white castled. 0 if white did not castle.</li>
+<li><code>black_castle</code>: An integer variable describing the move on which black castled. 0 if black did not castle.</li>
+<li><code>white_pawn</code>: An integer variable describing the number of times a white pawn was moved.</li>
+<li><code>black_pawn</code>: An integer variable describing the number of times a black pawn was moved.</li>
+<li><code>game_type</code>: A character variable taking on one of “rapid”, “blitz”, or “bullet”. Variable is “bullet” if the time limit of the match is less than 5, “blitz” if it’s less than 10, and “rapid” otherwise.</li>
+</ul>
+<p>After this feature engineering, we decided that some variables would not lend themselves well as predictors to the type of analysis we wished to do. We trimmed our data set accordingly, one-hot encoded categorical variables.This resulted in a final data frame of 14 predictors (see the statistical methods section for a discussion on which predictors we chose to keep).Finally, we chose a 90-10 train-test split which resulted in 18,036 training observations, and 2,004 testing observations.</p>
+</section>
+<section id="goal" class="level2">
+<h2 class="anchored" data-anchor-id="goal">Goal</h2>
+<p>As mentioned above, our goal is to apply statistical and machine learning methods to identify factors that most greatly influence the outcome of a chess game. Our hypothetical chess tutor gave us a few questions he wanted us to answer: Are the ELO ratings of the players good predictors of the winner? What are other good predictors of the winner? Do certain moves result in more wins? Does the timing of certain moves result in more wins? Do quicker matches result in fewer mates?</p>
+<p>In terms of the data, our goal is to build a handful of models with a sufficiently high predictive power from which we can extract feature importance information.</p>
+</section>
+<section id="statistical-methods" class="level2">
+<h2 class="anchored" data-anchor-id="statistical-methods">Statistical Methods</h2>
+<p>As the response variable of our data set is categorical, we will initially use GLIM procedures to construct our predictive models. The potential outcomes– a white victory, a draw, and a black victory– may be considered ordinal by some, where the aforementioned ordering is of decreasing “success” for the competitor playing white. Under this assumption, we will model cumulative logits by utilizing the <code>polr()</code> function. We will fit a model using all of our relevant predictors, a model using none of our predictors, and a model that has undergone stepwise selection, and then we will compare these to determine which is most appropriate for general use. We will finally assess the best model’s accuracy on both the train and test portion of the data.</p>
+<p>The outcome variable we are studying is unique in that there is a legitimate argument to be made that the three categories may also be nominal. Because of this, we can use slightly different methods to build a model under this assumption. We will use the multinom() function to construct this model and then we can compare its accuracy to that of the best ordinal model.</p>
+<p>Additionally, we can examine only decisive games. This is a valid way to examine data because a high percentage (over 95%) of the examples in our dataset were either white or black victories. Though many professional games end in draws, a higher percentage of amateur games tend to be decisive. If we filter the data in this way, we can use binary GLIM methods to construct a predictive model. We will build a model based on all of our predictors, a model based on none of our predictors, and finally a model based on predictors selected through stepwise means. We can compare these and assess which is the most adequate via accuracy metrics and AUC comparisons.</p>
+<p>Beyond GLIM models, we wish to identify any non-linear relationships that may exist between predictors and the outcome of interest. To achieve this, we will choose to use <em>XGBoost.</em> When building our <em>XGBoost</em> model, we will use a softmax objective function to describe the multi-class outcomes. We also hypothesize that a relatively simple model, with a fairly shallow tree, will be best suited for our purposes. For our evaluation method, we will use <code>merror</code>. This describes the number of wrong cases / the total number of cases. We plan to train our model for several iterations beyond that which was shown as examples in class. Finally, to extract feature importance information, we will use the <code>xgb::importance()</code> function which calculates a quantity called <em>gain.</em> As described in the documentation of <em>XGBoost</em>, “Gain is the improvement in accuracy brought by a feature to the branches it is on”.</p>
+</section>
+<section id="results-from-the-analyses" class="level2">
+<h2 class="anchored" data-anchor-id="results-from-the-analyses">Results from the analyses</h2>
+<p>This block of code allows us to reference variables created in <code>All_Code.R</code>. We’ve suppressed all outputs from this chunk.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load required libraries</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(this.path) <span class="co"># find where you are</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Note current script location</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>current_script_directory <span class="ot">&lt;-</span> <span class="fu">this.dir</span>()</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Source some local code</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">file.path</span>(current_script_directory, <span class="st">"All_Code.R"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="glim" class="level3">
+<h3 class="anchored" data-anchor-id="glim">GLIM</h3>
+<p>First, we construct a model under the assumption that the outcome is ordinally distributed. For this segment of the analysis, we will use the following variables: rated, turns, white_rating, black_rating, opening_moves, white_castle, black_castle, white_pawn_moves, black_pawn_moves, and game_type. After ascertaining that the test and train portions of the data had similar shapes, and checking that the chosen features did not exhibit multicollinearity, we constructed null, full, and stepwise models using the polr() function to predict the outcome for chess games. As the stepwise model had the lowest AIC value of the three, it was selected for examination of performance on the train and test sets.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mod.s)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Re-fitting to get Hessian</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Call:
+polr(formula = as.factor(winner) ~ black_rating + white_rating + 
+    black_castle + white_castle + black_pawn_moves + white_pawn_moves + 
+    opening_moves + rated, data = df2.train)
+
+Coefficients:
+                     Value Std. Error t value
+black_rating      0.003655  8.711e-05  41.956
+white_rating     -0.003585  8.549e-05 -41.931
+black_castle      0.024542  2.732e-03   8.983
+white_castle     -0.023367  2.855e-03  -8.186
+black_pawn_moves  0.046378  4.940e-03   9.388
+white_pawn_moves -0.027254  4.938e-03  -5.519
+opening_moves    -0.013824  5.929e-03  -2.332
+rated            -0.073005  3.947e-02  -1.850
+
+Intercepts:
+    Value    Std. Error t value 
+1|2   0.1087   0.0033    32.7691
+2|3   0.3299   0.0083    39.8588
+
+Residual Deviance: 27704.79 
+AIC: 27724.79 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>coef.table2</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                        Value   Std. Error    t value       p value
+black_rating      0.003654779 8.710969e-05  41.956059  0.000000e+00
+white_rating     -0.003584770 8.549273e-05 -41.930698  0.000000e+00
+black_castle      0.024541644 2.732100e-03   8.982705  2.641903e-19
+white_castle     -0.023366715 2.854544e-03  -8.185795  2.705128e-16
+black_pawn_moves  0.046378370 4.940108e-03   9.388128  6.107603e-21
+white_pawn_moves -0.027253737 4.937912e-03  -5.519283  3.403847e-08
+opening_moves    -0.013824394 5.928685e-03  -2.331781  1.971223e-02
+rated            -0.073005427 3.946890e-02  -1.849695  6.435750e-02
+1|2               0.108735985 3.318253e-03  32.769050 1.625730e-235
+2|3               0.329921610 8.277264e-03  39.858776  0.000000e+00</code></pre>
+</div>
+</div>
+<p>We will now interpret this output. The model chose 8 of the predictors, 7 of which are significant at the <span class="math inline">\(\alpha=0.05\)</span> level. If there were no predictors, the log odds of white winning relative to a draw or a black win is 0.14924. That is, the odds of a white win relative to a draw or black win are <span class="math inline">\(e^{0.1087} = 1.1148\)</span>. If there were no predictors, the log odds of white winning or a draw relative to a black win is 0.3299. That is, the odds of a white win or draw relative to a black win are <span class="math inline">\(e^{0.3299} = 1.3908\)</span>. Let us now interpret the coefficient black_castle. At the <span class="math inline">\(\alpha=0.05\)</span> level, black_castle is significant. The predicted coefficient for black_castle is 0.02454. If a black castle is delayed by one move, with all other predictors fixed, we expect log odds of each level to increase by 0.02424. The effect is to multiply the odds in each level by <span class="math inline">\(e^{0.02454} = 1.0245\)</span> for each move increase in black_castle.</p>
+<p>We assess the accuracy of this model on train and test data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>((<span class="fu">sum</span>(<span class="fu">diag</span>(ctable.pred3.train))<span class="sc">/</span><span class="fu">sum</span>(ctable.pred3.train))<span class="sc">*</span><span class="dv">100</span>, <span class="dv">2</span>) <span class="co">#train data accuracy</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 62.93</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>((<span class="fu">sum</span>(<span class="fu">diag</span>(ctable.pred3.test))<span class="sc">/</span><span class="fu">sum</span>(ctable.pred3.test))<span class="sc">*</span><span class="dv">100</span>, <span class="dv">2</span>) <span class="co">#test data accuracy</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 61.43</code></pre>
+</div>
+</div>
+<p>With a 61.43% correct classification rate, the ordinal model does a fair, if not ideal, job of fitting new data. Interestingly, if concerningly, the model seems hesitant to ever predict a draw, and more likely to predict a white victory than it should.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>ctable.pred3.test</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   
+      1   2   3
+  1 717  51 378
+  2   0   0   0
+  3 297  47 514</code></pre>
+</div>
+</div>
+<p>Next, we constructed a model under the assumption that the outcome is nominally distributed. To do this, we made use of the miltinom() function.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit.gl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Call:
+multinom(formula = as.factor(winner) ~ ., data = df2.train)
+
+Coefficients:
+  (Intercept)       rated        turns white_rating black_rating opening_moves
+2  -2.8645777 -0.58466186 2.912702e-02 -0.001284306  0.001937395  -0.006627645
+3  -0.1618129 -0.05709167 1.684656e-05 -0.003833497  0.003892737  -0.013909827
+  white_castle black_castle white_pawn_moves black_pawn_moves game_typeblitz
+2  -0.02756447 -0.003696219      -0.07157540      -0.01886035    -1.04246557
+3  -0.02467238  0.025632394      -0.03030973       0.05102651    -0.06304477
+  game_typebullet game_typerapid
+2    -1.079462128     -0.7426500
+3     0.004591737     -0.1033599
+
+Std. Errors:
+   (Intercept)       rated       turns white_rating black_rating opening_moves
+2 0.0007210795 0.009031364 0.001789602 1.772370e-04 1.812991e-04   0.013346699
+3 0.0059622055 0.039751337 0.001088225 9.054544e-05 9.056519e-05   0.006281728
+  white_castle black_castle white_pawn_moves black_pawn_moves game_typeblitz
+2  0.006665535  0.006437015       0.01225835      0.012180276     0.03931113
+3  0.003027861  0.002894441       0.00650681      0.006514602     0.02490068
+  game_typebullet game_typerapid
+2     0.003766043     0.03816997
+3     0.035043456     0.02733349
+
+Residual Deviance: 27133.67 
+AIC: 27181.67 </code></pre>
+</div>
+</div>
+<p>Though a stepwise function was fitted as well, it elected to keep every variable, so the full model was used. In this case, white victory was the baseline level. We can see that pawn moves for white, for instance, has large coefficients compared to its standard errors for both levels, meaning that it is significant in predicting whether a match will be a draw or a black victory. Additionally, both it and white rating have negative coefficients, which makes intuitive sense, as the more highly rated the player using white is, or the more they improve their position by moving pawns, the more theoretically likely they are to win. Using this new model, we can assess accuracy for the train and test:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>((<span class="fu">sum</span>(<span class="fu">diag</span>(ctable.pred.train))<span class="sc">/</span><span class="fu">sum</span>(ctable.pred.train))<span class="sc">*</span><span class="dv">100</span>, <span class="dv">2</span>) <span class="co">#train accuracy</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 63.08</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>((<span class="fu">sum</span>(<span class="fu">diag</span>(ctable.pred.test))<span class="sc">/</span><span class="fu">sum</span>(ctable.pred.test))<span class="sc">*</span><span class="dv">100</span>, <span class="dv">2</span>) <span class="co">#test accuracy</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 61.88</code></pre>
+</div>
+</div>
+<p>We see that train and test are quite similar, at 63.08% for train and 61.88% for test. This gives us confidence that the model is not overfitting. Additionally, when we view the confusion matrix for test, we see that this model does predict draws (though still too infrequently).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>ctable.pred.test</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   
+      1   2   3
+  1 720   2 292
+  2  51   1  46
+  3 373   0 519</code></pre>
+</div>
+</div>
+<p>We then removed the ~5% of draws from the data set and constructed a binary logit model to predict the outcomes of decisive games. For this, we made a new 90/10 train/test split, and ensured that the proportion of victories for each color was comparable. Once this assumption was confirmed, we constructed a full model, a null model, and a stepwise model. The stepwise model was as follows:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(both.logit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+glm(formula = winner ~ black_rating + white_rating + black_castle + 
+    white_castle + black_pawn_moves + white_pawn_moves + opening_moves + 
+    game_typebullet, family = binomial(link = "logit"), data = df3.train)
+
+Coefficients:
+                   Estimate Std. Error z value Pr(&gt;|z|)    
+(Intercept)      -3.606e-01  1.039e-01  -3.470 0.000521 ***
+black_rating      3.868e-03  9.541e-05  40.544  &lt; 2e-16 ***
+white_rating     -3.766e-03  9.548e-05 -39.444  &lt; 2e-16 ***
+black_castle      2.594e-02  2.886e-03   8.988  &lt; 2e-16 ***
+white_castle     -2.411e-02  3.025e-03  -7.971 1.57e-15 ***
+black_pawn_moves  5.101e-02  5.370e-03   9.499  &lt; 2e-16 ***
+white_pawn_moves -2.886e-02  5.354e-03  -5.389 7.07e-08 ***
+opening_moves    -1.698e-02  6.289e-03  -2.700 0.006941 ** 
+game_typebullet   9.565e-02  5.549e-02   1.724 0.084767 .  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 23780  on 17179  degrees of freedom
+Residual deviance: 20903  on 17171  degrees of freedom
+AIC: 20921
+
+Number of Fisher Scoring iterations: 4</code></pre>
+</div>
+</div>
+<p>Six of the eight selected factors were significant at the alpha=0.05 level for this stepwise model. Though the stepwise model had the lowest AIC value of the three constructed binary logit models, comparing the residual deviances of the models told a different story:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>null.logit<span class="sc">$</span>deviance</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 23780.01</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>both.logit<span class="sc">$</span>deviance</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 20903.33</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>full.logit<span class="sc">$</span>deviance</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 20902.9</code></pre>
+</div>
+</div>
+<p>Therefore, we decided to examine both the full and the stepwise binary logit models for accuracy and ROC metrics.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>(accuracy.full)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 66.387</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot.roc</span>(roc.full, <span class="at">legacy.axes =</span> <span class="cn">TRUE</span>, <span class="at">print.auc =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Results_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>The accuracy of the full model was 66.75%, with an AUC value of 0.735.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>(accuracy.both)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 66.545</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot.roc</span>(roc.both, <span class="at">legacy.axes =</span> <span class="cn">TRUE</span>, <span class="at">print.auc =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Results_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Though a few of the examples were classified differently by this stepwise model, it outputs the same accuracy and AUC values as the full binary logit model.</p>
+</section>
+<section id="xgboost" class="level3">
+<h3 class="anchored" data-anchor-id="xgboost">XGBoost</h3>
+<p>Upon building some generalized linear models, we decided to investigate any non-linear or more nuanced relationships that might exist between predictors and the game winner, our outcome of interest. Such relationships were found using a gradient boosted model.</p>
+<p>After several iterations of hyper parameter tuning, and some feature engineering (described above), our gradient boosted model achieved high accuracy on both the training and test sets when predicting the game winner: 93.96% and 87.97% respectively. This allowed us to extract important features.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>imp</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                      Feature        Gain        Cover   Frequency
+ 1:                     turns 0.465298933 0.5549879191 0.262334955
+ 2:              white_rating 0.120360158 0.1381346378 0.167824878
+ 3: victory_statusOut.of.Time 0.100666640 0.0019367674 0.017025712
+ 4:              black_rating 0.100407632 0.1324699050 0.159833218
+ 5:        victory_statusMate 0.070744615 0.0070279676 0.014593468
+ 6:      victory_statusResign 0.040438542 0.0131138997 0.057678944
+ 7:          black_pawn_moves 0.027818365 0.0370287021 0.062195969
+ 8:          white_pawn_moves 0.022790625 0.0402312351 0.058026407
+ 9:              black_castle 0.017434709 0.0231626568 0.056636553
+10:              white_castle 0.014728179 0.0245010355 0.057331480
+11:             opening_moves 0.011214721 0.0187495289 0.052466991
+12:            game_typerapid 0.003960111 0.0035933195 0.017373176
+13:                 ratedTRUE 0.002758160 0.0044575061 0.011118833
+14:           game_typebullet 0.001378610 0.0006049195 0.005559416</code></pre>
+</div>
+</div>
+<p>The above table enumerates a few metrics for each predictor. The docs for <em>XGBoost</em> explained each clearly: “<code>Gain</code> is the improvement in accuracy brought by a feature to the branches it is on. <code>Cover</code> is related to the second order derivative (or Hessian) of the loss function with respect to a particular variable; thus, a large value indicates a variable has a large potential impact on the loss function and so is important <code>Frequency</code> is a simpler way to measure the <code>Gain.</code> It just counts the number of times a feature is used in all generated trees.”</p>
+<p>Below, is a plot of <code>Gain</code> for each predictor.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">xgb.plot.importance</span>(imp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Results_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Of particular interest here is the most important feature: <code>turns</code>. While the GLIM models ran previously helped us to observe that a linear relationship exists between the players rating and the outcome as well as between key moves and outcome, they did not report <code>turns</code> as an important feature.</p>
+<p>Observe below that for games with less than the average number of turns, there was a smaller proportion of draws. It seems that longer games tend to end in draws more frequently.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>t0 <span class="ot">&lt;-</span> <span class="fu">table</span>(df[df<span class="sc">$</span>turns <span class="sc">&lt;</span> <span class="fu">mean</span>(df[,<span class="st">"turns"</span>]), ][<span class="st">"winner"</span>])</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>t0 <span class="sc">/</span> <span class="fu">sum</span>(t0)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>winner
+    Black      Draw     White 
+0.4538509 0.0257311 0.5204180 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>t1 <span class="ot">&lt;-</span> <span class="fu">table</span>(df[df<span class="sc">$</span>turns <span class="sc">&gt;=</span> <span class="fu">mean</span>(df[,<span class="st">"turns"</span>]), ][<span class="st">"winner"</span>])</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>t1 <span class="sc">/</span> <span class="fu">sum</span>(t1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>winner
+     Black       Draw      White 
+0.45498671 0.07592742 0.46908587 </code></pre>
+</div>
+</div>
+<p>I performed three statistical tests. The first compared the proportion of draws between games with low turns and games with high turns. The second two did the same, but for proportion of black wins and proportion of white wins respectively.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>res1 <span class="ot">&lt;-</span> <span class="fu">prop.test</span>(<span class="at">x =</span> <span class="fu">c</span>(t0[<span class="st">"Draw"</span>], t1[<span class="st">"Draw"</span>]), <span class="at">n =</span> <span class="fu">c</span>(<span class="fu">sum</span>(t0), <span class="fu">sum</span>(t1)), <span class="at">correct =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>res1<span class="sc">$</span>p.value</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1.285868e-61</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>res2 <span class="ot">&lt;-</span> <span class="fu">prop.test</span>(<span class="at">x =</span> <span class="fu">c</span>(t0[<span class="st">"Black"</span>], t1[<span class="st">"Black"</span>]), <span class="at">n =</span> <span class="fu">c</span>(<span class="fu">sum</span>(t0), <span class="fu">sum</span>(t1)), <span class="at">correct =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>res2<span class="sc">$</span>p.value</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.872916</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>res3 <span class="ot">&lt;-</span> <span class="fu">prop.test</span>(<span class="at">x =</span> <span class="fu">c</span>(t0[<span class="st">"White"</span>], t1[<span class="st">"White"</span>]), <span class="at">n =</span> <span class="fu">c</span>(<span class="fu">sum</span>(t0), <span class="fu">sum</span>(t1)), <span class="at">correct =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>res3<span class="sc">$</span>p.value</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 6.073604e-13</code></pre>
+</div>
+</div>
+<p>At the <span class="math inline">\(\alpha = 0.05\)</span> significance level, we can see that there is evidence to conclude that games with a lot of turns result in draws more frequently than games with few turns. We also have evidence to conclude that games with a lot of turns result in white winning less frequently than in games with few turns. In the case of black winning, we fail to reject the null hypothesis and conclude that the two proportions (in short games versus long games) of black winning are equal.</p>
+</section>
+</section>
+<section id="summary-and-conclusion" class="level2">
+<h2 class="anchored" data-anchor-id="summary-and-conclusion">Summary and conclusion</h2>
+<p>To summarize, we found that there are a few useful predictors of a chess game outcome. In general, both our GLIM models and our XGBoost model indicated that the rating of each player, the timing of key moves like castling and the frequency of pushing pawns are all important factors that help influence the game outcome. Interestingly, a non-linear relationship between the length of the game (number of turns) and the game outcome was found by our XGBoost model. This factor turned out to be the most important predictor of game outcome.</p>
+<p>Though there was much agreement in regards to the actual predictors that were deemed useful by the GLIM and XGBoost models, the GLIM models never surpassed a 70% accuracy threshold, leading us to believe that the XGBoost model was much better in terms of predictive ability. Further feature engineering, like the inclusion of columns indicating other key moves beyond castling and pawn moves is possible and likely to help predict the winner. We also feel that potentially looking at the intricacies of every position, which Pulido carried out in his influential work, may be a worthwhile expense of time for future research.</p>
+<p>We recommend that our chess tutor teach his students to castle early in the game, push pawns frequently, and strive to win in as few moves as possible. Our analysis indicates that these factors will best help the students of our hypothetical chess tutor to win more games of chess.</p>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
+<p>https://www.kaggle.com/datasets/mysarahmadbhat/online-chess-games/data</p>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

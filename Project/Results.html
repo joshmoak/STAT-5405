@@ -158,7 +158,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="results-from-the-analyses" class="level2">
 <h2 class="anchored" data-anchor-id="results-from-the-analyses">Results from the analyses</h2>
-<p>This block of code allows us to reference variables created in <code>All_Code.R</code>. Hopefully, it should help keep our results section nice and tidy. I also changed the way the 5 new columns are added, it’s quicker and more succinct, but still takes about 45 seconds on my machine.</p>
+<p>This block of code allows us to reference variables created in <code>All_Code.R</code>. We’ve suppressed all outputs from this chunk.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load required libraries</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(this.path) <span class="co"># find where you are</span></span>
@@ -169,6 +169,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Source some local code</span></span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">file.path</span>(current_script_directory, <span class="st">"All_Code.R"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<section id="glim" class="level3">
+<h3 class="anchored" data-anchor-id="glim">GLIM</h3>
 <p>First, we construct a model under the assumption that the outcome is ordinally distributed. For this segment of the analysis, we will use the following variables: rated, turns, white_rating, black_rating, opening_moves, white_castle, black_castle, white_pawn_moves, black_pawn_moves, and game_type. After ascertaining that the test and train portions of the data had similar shapes, and checking that the chosen features did not exhibit multicollinearity, we constructed null, full, and stepwise models using the polr() function to predict the outcome for chess games. As the stepwise model had the lowest AIC value of the three, it was selected for examination of performance on the train and test sets.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mod.s)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -216,8 +218,8 @@ rated            -0.073005427 3.946890e-02  -1.849695  6.435750e-02
 2|3               0.329921610 8.277264e-03  39.858776  0.000000e+00</code></pre>
 </div>
 </div>
-<p>We will now interpret this output. The model chose 8 of the predictors, 7 of which are significant at the <span class="math inline">\(\alpha=0.05\)</span> level. If there were no predictors, the log odds of white winning relative to a draw or a black win is 0.14924. That is, the odds of a white win relative to a draw or black win are <span class="math inline">\(e^{0.1087} = 1.1148\)</span>. If there were no predictors, the log odds of white winning or a draw relative to a black win is 0.3299. That is, the odds of a white win or draw relative to a black win are <span class="math inline">\(e^{0.3299)} = 1.3908\)</span>. Let us now interpret the coefficient black_castle. At the <span class="math inline">\(\alpha=0.05\)</span> level, black_castle is significant. The predicted coefficient for black_castle is 0.02454. If a black castle is delayed by one move, with all other predictors fixed, we expect log odds of each level to increase by 0.02424. The effect is to multiply the odds in each level by <span class="math inline">\(e^{0.02454} = 1.0245\)</span> for each move increase in black_castle.</p>
-<p>We will now assess the accuracy of this model on train and test data.</p>
+<p>We will now interpret this output. The model chose 8 of the predictors, 7 of which are significant at the <span class="math inline">\(\alpha=0.05\)</span> level. If there were no predictors, the log odds of white winning relative to a draw or a black win is 0.14924. That is, the odds of a white win relative to a draw or black win are <span class="math inline">\(e^{0.1087} = 1.1148\)</span>. If there were no predictors, the log odds of white winning or a draw relative to a black win is 0.3299. That is, the odds of a white win or draw relative to a black win are <span class="math inline">\(e^{0.3299} = 1.3908\)</span>. Let us now interpret the coefficient black_castle. At the <span class="math inline">\(\alpha=0.05\)</span> level, black_castle is significant. The predicted coefficient for black_castle is 0.02454. If a black castle is delayed by one move, with all other predictors fixed, we expect log odds of each level to increase by 0.02424. The effect is to multiply the odds in each level by <span class="math inline">\(e^{0.02454} = 1.0245\)</span> for each move increase in black_castle.</p>
+<p>We assess the accuracy of this model on train and test data.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>((<span class="fu">sum</span>(<span class="fu">diag</span>(ctable.pred3.train))<span class="sc">/</span><span class="fu">sum</span>(ctable.pred3.train))<span class="sc">*</span><span class="dv">100</span>, <span class="dv">2</span>) <span class="co">#train data accuracy</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -239,11 +241,139 @@ rated            -0.073005427 3.946890e-02  -1.849695  6.435750e-02
   3 297  47 514</code></pre>
 </div>
 </div>
-<p>TODO: nominal, binary</p>
+<p>Next, we constructed a model under the assumption that the outcome is nominally distributed. To do this, we made use of the miltinom() function.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit.gl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Call:
+multinom(formula = as.factor(winner) ~ ., data = df2.train)
+
+Coefficients:
+  (Intercept)       rated        turns white_rating black_rating opening_moves
+2  -2.8645777 -0.58466186 2.912702e-02 -0.001284306  0.001937395  -0.006627645
+3  -0.1618129 -0.05709167 1.684656e-05 -0.003833497  0.003892737  -0.013909827
+  white_castle black_castle white_pawn_moves black_pawn_moves game_typeblitz
+2  -0.02756447 -0.003696219      -0.07157540      -0.01886035    -1.04246557
+3  -0.02467238  0.025632394      -0.03030973       0.05102651    -0.06304477
+  game_typebullet game_typerapid
+2    -1.079462128     -0.7426500
+3     0.004591737     -0.1033599
+
+Std. Errors:
+   (Intercept)       rated       turns white_rating black_rating opening_moves
+2 0.0007210795 0.009031364 0.001789602 1.772370e-04 1.812991e-04   0.013346699
+3 0.0059622055 0.039751337 0.001088225 9.054544e-05 9.056519e-05   0.006281728
+  white_castle black_castle white_pawn_moves black_pawn_moves game_typeblitz
+2  0.006665535  0.006437015       0.01225835      0.012180276     0.03931113
+3  0.003027861  0.002894441       0.00650681      0.006514602     0.02490068
+  game_typebullet game_typerapid
+2     0.003766043     0.03816997
+3     0.035043456     0.02733349
+
+Residual Deviance: 27133.67 
+AIC: 27181.67 </code></pre>
+</div>
+</div>
+<p>Though a stepwise function was fitted as well, it elected to keep every variable, so the full model was used. In this case, white victory was the baseline level. We can see that pawn moves for white, for instance, has large coefficients compared to its standard errors for both levels, meaning that it is significant in predicting whether a match will be a draw or a black victory. Additionally, both it and white rating have negative coefficients, which makes intuitive sense, as the more highly rated the player using white is, or the more they improve their position by moving pawns, the more theoretically likely they are to win. Using this new model, we can assess accuracy for the train and test:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>((<span class="fu">sum</span>(<span class="fu">diag</span>(ctable.pred.train))<span class="sc">/</span><span class="fu">sum</span>(ctable.pred.train))<span class="sc">*</span><span class="dv">100</span>, <span class="dv">2</span>) <span class="co">#train accuracy</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 63.08</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>((<span class="fu">sum</span>(<span class="fu">diag</span>(ctable.pred.test))<span class="sc">/</span><span class="fu">sum</span>(ctable.pred.test))<span class="sc">*</span><span class="dv">100</span>, <span class="dv">2</span>) <span class="co">#test accuracy</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 61.88</code></pre>
+</div>
+</div>
+<p>We see that train and test are quite similar, at 63.08% for train and 61.88% for test. This gives us confidence that the model is not overfitting. Additionally, when we view the confusion matrix for test, we see that this model does predict draws (though still too infrequently).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>ctable.pred.test</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   
+      1   2   3
+  1 720   2 292
+  2  51   1  46
+  3 373   0 519</code></pre>
+</div>
+</div>
+<p>We then removed the ~5% of draws from the data set and constructed a binary logit model to predict the outcomes of decisive games. For this, we made a new 90/10 train/test split, and ensured that the proportion of victories for each color was comparable. Once this assumption was confirmed, we constructed a full model, a null model, and a stepwise model. The stepwise model was as follows:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(both.logit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+glm(formula = winner ~ black_rating + white_rating + black_castle + 
+    white_castle + black_pawn_moves + white_pawn_moves + opening_moves + 
+    game_typebullet, family = binomial(link = "logit"), data = df3.train)
+
+Coefficients:
+                   Estimate Std. Error z value Pr(&gt;|z|)    
+(Intercept)      -3.606e-01  1.039e-01  -3.470 0.000521 ***
+black_rating      3.868e-03  9.541e-05  40.544  &lt; 2e-16 ***
+white_rating     -3.766e-03  9.548e-05 -39.444  &lt; 2e-16 ***
+black_castle      2.594e-02  2.886e-03   8.988  &lt; 2e-16 ***
+white_castle     -2.411e-02  3.025e-03  -7.971 1.57e-15 ***
+black_pawn_moves  5.101e-02  5.370e-03   9.499  &lt; 2e-16 ***
+white_pawn_moves -2.886e-02  5.354e-03  -5.389 7.07e-08 ***
+opening_moves    -1.698e-02  6.289e-03  -2.700 0.006941 ** 
+game_typebullet   9.565e-02  5.549e-02   1.724 0.084767 .  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 23780  on 17179  degrees of freedom
+Residual deviance: 20903  on 17171  degrees of freedom
+AIC: 20921
+
+Number of Fisher Scoring iterations: 4</code></pre>
+</div>
+</div>
+<p>Six of the eight selected factors were significant at the alpha=0.05 level for this stepwise model. Though the stepwise model had the lowest AIC value of the three constructed binary logit models, comparing the residual deviances of the models told a different story:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>null.logit<span class="sc">$</span>deviance</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 23780.01</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>both.logit<span class="sc">$</span>deviance</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 20903.33</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>full.logit<span class="sc">$</span>deviance</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 20902.9</code></pre>
+</div>
+</div>
+<p>Therefore, we decided to examine both the full and the stepwise binary logit models for accuracy and ROC metrics.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>(accuracy.full)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 66.387</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot.roc</span>(roc.full, <span class="at">legacy.axes =</span> <span class="cn">TRUE</span>, <span class="at">print.auc =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Results_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>The accuracy of the full model was 66.75%, with an AUC value of 0.735.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>(accuracy.both)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 66.545</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot.roc</span>(roc.both, <span class="at">legacy.axes =</span> <span class="cn">TRUE</span>, <span class="at">print.auc =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Results_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Though a few of the examples were classified differently by this stepwise model, it outputs the same accuracy and AUC values as the full binary logit model.</p>
+</section>
+<section id="xgboost" class="level3">
+<h3 class="anchored" data-anchor-id="xgboost">XGBoost</h3>
 <p>Upon building some generalized linear models, we decided to investigate any non-linear or more nuanced relationships that might exist between predictors and the game winner, our outcome of interest. Such relationships were found using a gradient boosted model.</p>
 <p>After several iterations of hyper parameter tuning, and some feature engineering (described above), our gradient boosted model achieved high accuracy on both the training and test sets when predicting the game winner: 93.96% and 87.97% respectively. This allowed us to extract important features.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>imp</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>imp</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                      Feature        Gain        Cover   Frequency
  1:                     turns 0.465298933 0.5549879191 0.262334955
@@ -265,23 +395,23 @@ rated            -0.073005427 3.946890e-02  -1.849695  6.435750e-02
 <p>The above table enumerates a few metrics for each predictor. The docs for <em>XGBoost</em> explained each clearly: “<code>Gain</code> is the improvement in accuracy brought by a feature to the branches it is on. <code>Cover</code> is related to the second order derivative (or Hessian) of the loss function with respect to a particular variable; thus, a large value indicates a variable has a large potential impact on the loss function and so is important <code>Frequency</code> is a simpler way to measure the <code>Gain.</code> It just counts the number of times a feature is used in all generated trees.”</p>
 <p>Below, is a plot of <code>Gain</code> for each predictor.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">xgb.plot.importance</span>(imp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">xgb.plot.importance</span>(imp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<p><img src="Results_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672"></p>
+<p><img src="Results_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
 <p>Of particular interest here is the most important feature: <code>turns</code>. While the GLIM models ran previously helped us to observe that a linear relationship exists between the players rating and the outcome as well as between key moves and outcome, they did not report <code>turns</code> as an important feature.</p>
 <p>Observe below that for games with less than the average number of turns, there was a smaller proportion of draws. It seems that longer games tend to end in draws more frequently.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>t0 <span class="ot">&lt;-</span> <span class="fu">table</span>(df[df<span class="sc">$</span>turns <span class="sc">&lt;</span> <span class="fu">mean</span>(df[,<span class="st">"turns"</span>]), ][<span class="st">"winner"</span>])</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>t0 <span class="sc">/</span> <span class="fu">sum</span>(t0)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>t0 <span class="ot">&lt;-</span> <span class="fu">table</span>(df[df<span class="sc">$</span>turns <span class="sc">&lt;</span> <span class="fu">mean</span>(df[,<span class="st">"turns"</span>]), ][<span class="st">"winner"</span>])</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>t0 <span class="sc">/</span> <span class="fu">sum</span>(t0)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>winner
     Black      Draw     White 
 0.4538509 0.0257311 0.5204180 </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>t1 <span class="ot">&lt;-</span> <span class="fu">table</span>(df[df<span class="sc">$</span>turns <span class="sc">&gt;=</span> <span class="fu">mean</span>(df[,<span class="st">"turns"</span>]), ][<span class="st">"winner"</span>])</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>t1 <span class="sc">/</span> <span class="fu">sum</span>(t1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>t1 <span class="ot">&lt;-</span> <span class="fu">table</span>(df[df<span class="sc">$</span>turns <span class="sc">&gt;=</span> <span class="fu">mean</span>(df[,<span class="st">"turns"</span>]), ][<span class="st">"winner"</span>])</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>t1 <span class="sc">/</span> <span class="fu">sum</span>(t1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>winner
      Black       Draw      White 
@@ -290,31 +420,34 @@ rated            -0.073005427 3.946890e-02  -1.849695  6.435750e-02
 </div>
 <p>I performed three statistical tests. The first compared the proportion of draws between games with low turns and games with high turns. The second two did the same, but for proportion of black wins and proportion of white wins respectively.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>res1 <span class="ot">&lt;-</span> <span class="fu">prop.test</span>(<span class="at">x =</span> <span class="fu">c</span>(t0[<span class="st">"Draw"</span>], t1[<span class="st">"Draw"</span>]), <span class="at">n =</span> <span class="fu">c</span>(<span class="fu">sum</span>(t0), <span class="fu">sum</span>(t1)), <span class="at">correct =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>res1<span class="sc">$</span>p.value</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>res1 <span class="ot">&lt;-</span> <span class="fu">prop.test</span>(<span class="at">x =</span> <span class="fu">c</span>(t0[<span class="st">"Draw"</span>], t1[<span class="st">"Draw"</span>]), <span class="at">n =</span> <span class="fu">c</span>(<span class="fu">sum</span>(t0), <span class="fu">sum</span>(t1)), <span class="at">correct =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>res1<span class="sc">$</span>p.value</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 1.285868e-61</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>res2 <span class="ot">&lt;-</span> <span class="fu">prop.test</span>(<span class="at">x =</span> <span class="fu">c</span>(t0[<span class="st">"Black"</span>], t1[<span class="st">"Black"</span>]), <span class="at">n =</span> <span class="fu">c</span>(<span class="fu">sum</span>(t0), <span class="fu">sum</span>(t1)), <span class="at">correct =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>res2<span class="sc">$</span>p.value</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>res2 <span class="ot">&lt;-</span> <span class="fu">prop.test</span>(<span class="at">x =</span> <span class="fu">c</span>(t0[<span class="st">"Black"</span>], t1[<span class="st">"Black"</span>]), <span class="at">n =</span> <span class="fu">c</span>(<span class="fu">sum</span>(t0), <span class="fu">sum</span>(t1)), <span class="at">correct =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>res2<span class="sc">$</span>p.value</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 0.872916</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>res3 <span class="ot">&lt;-</span> <span class="fu">prop.test</span>(<span class="at">x =</span> <span class="fu">c</span>(t0[<span class="st">"White"</span>], t1[<span class="st">"White"</span>]), <span class="at">n =</span> <span class="fu">c</span>(<span class="fu">sum</span>(t0), <span class="fu">sum</span>(t1)), <span class="at">correct =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>res3<span class="sc">$</span>p.value</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>res3 <span class="ot">&lt;-</span> <span class="fu">prop.test</span>(<span class="at">x =</span> <span class="fu">c</span>(t0[<span class="st">"White"</span>], t1[<span class="st">"White"</span>]), <span class="at">n =</span> <span class="fu">c</span>(<span class="fu">sum</span>(t0), <span class="fu">sum</span>(t1)), <span class="at">correct =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>res3<span class="sc">$</span>p.value</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 6.073604e-13</code></pre>
 </div>
 </div>
 <p>At the <span class="math inline">\(\alpha = 0.05\)</span> significance level, we can see that there is evidence to conclude that games with a lot of turns result in draws more frequently than games with few turns. We also have evidence to conclude that games with a lot of turns result in white winning less frequently than in games with few turns. In the case of black winning, we fail to reject the null hypothesis and conclude that the two proportions (in short games versus long games) of black winning are equal.</p>
 </section>
+</section>
 <section id="summary-and-conclusion" class="level2">
 <h2 class="anchored" data-anchor-id="summary-and-conclusion">Summary and conclusion</h2>
-<p>1-2 pages. Did you achieeve your goal? Which method (out of what you tried) do you prefer? What other extensions are possible in the future?</p>
+<p>To summarize, we found that there are a few useful predictors of a chess game outcome. In general, both our GLIM models and our XGBoost model indicated that the rating of each player, the timing of key moves like castling and the frequency of pushing pawns are all important factors that help influence the game outcome. Interestingly, a non-linear relationship between the length of the game (number of turns) and the game outcome was found by our XGBoost model. This factor turned out to be the most important predictor of game outcome.</p>
+<p>Though there was much agreement in regards to the actual predictors that were deemed useful by the GLIM and XGBoost models, the GLIM models never surpassed a 70% accuracy threshold, leading us to believe that the XGBoost model was much better in terms of predictive ability. Further feature engineering, like the inclusion of columns indicating other key moves beyond castling and pawn moves is possible and likely to help predict the winner. We also feel that potentially looking at the intricacies of every position, which Pulido carried out in his influential work, may be a worthwhile expense of time for future research.</p>
+<p>We recommend that our chess tutor teach his students to castle early in the game, push pawns frequently, and strive to win in as few moves as possible. Our analysis indicates that these factors will best help the students of our hypothetical chess tutor to win more games of chess.</p>
 </section>
 <section id="references" class="level2">
 <h2 class="anchored" data-anchor-id="references">References</h2>
-<p>you can include references for the data, and prior work you may have referred to.</p>
+<p>https://www.kaggle.com/datasets/mysarahmadbhat/online-chess-games/data</p>
 </section>
 
 </main>
