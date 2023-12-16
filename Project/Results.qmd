@@ -15,7 +15,6 @@ We have been contacted by an aspiring chess tutor who would like to gain a great
 This tutor has provided us with a dataset of over 20,000 games completed on the website lichess.com.
 Each game has data including each move of the game, the ratings of the players, the time format of the game, the opening used, the winner, and the method of victory (if the result was not a draw).
 To do this, we will use our understanding of R to clean the data and create new columns from the game data provided to us.
-Additionally, we will look into using the package chess to aid in both our analysis of the games and in feature engineering.
 We will then use the GLIM methods we have learned in class with other investigative resources (such as decision trees and gradient boosting) to answer questions the chess tutor may have about the games.
 
 ## Introduction
